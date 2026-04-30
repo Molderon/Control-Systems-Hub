@@ -1,0 +1,1436 @@
+/* grid-fx.js — cycling background grid modes */
+(function () {
+    'use strict';
+
+    const canvas = document.getElementById('grid-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    let W, H, t = 0, modeT = 0, modeIdx = 0, lastTs = 0, lastDt = 0.016;
+
+    /* New mode state */
+    let golGrid = null, golNextGrid = null, golCols = 0, golRows = 0, golTick = 0;
+    let icLayout = null, icPkts = [];
+    let sierpPt = null;
+
+    let currentModeDuration = 40 + Math.random() * 60;  // 40–100 s for first mode
+    let restDuration = 5 + Math.random() * 10;           // 5–15 s for first rest
+    let restPhase    = false;   // true = canvas clear, CSS square grid visible
+    let modeHistory  = [];      // last 3 played indices — excluded from next pick
+    const FADE = 2.4;
+    const DIM  = 0.70;
+
+    const ac  = a => `rgba(0,255,255,${a})`;
+    const ac2 = a => `rgba(255,0,255,${a})`;
+    const wh  = a => `rgba(180,220,255,${a})`;
+    const amb = a => `rgba(255,185,0,${a})`;
+    const grn = a => `rgba(57,255,20,${a})`;
+
+    const eio  = x => x < 0.5 ? 2*x*x : 1-Math.pow(-2*x+2,2)/2;
+    const lerp = (a,b,v) => a+(b-a)*v;
+
+    /* ══════════════════════════════════════════════════════════════════════════
+       SHARED HELPERS
+    ══════════════════════════════════════════════════════════════════════════ */
+    function drawTerminalPanel(PX, PY, PW, PH, headerText) {
+        const HDR = 28;
+        ctx.fillStyle = 'rgba(0,8,10,0.18)';
+        ctx.fillRect(PX, PY, PW, PH);
+        ctx.strokeStyle = ac(0.22); ctx.lineWidth = 1;
+        ctx.strokeRect(PX, PY, PW, PH);
+        ctx.strokeStyle = ac(0.44); ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(PX,PY+18); ctx.lineTo(PX,PY); ctx.lineTo(PX+18,PY);
+        ctx.moveTo(PX+PW-18,PY+PH); ctx.lineTo(PX+PW,PY+PH); ctx.lineTo(PX+PW,PY+PH-18);
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(0,255,255,0.055)';
+        ctx.fillRect(PX, PY, PW, HDR);
+        ctx.fillStyle = ac(0.48);
+        ctx.font = '700 8px "JetBrains Mono", monospace'; ctx.textAlign = 'left';
+        ctx.fillText(headerText, PX+8, PY+17);
+        if (Math.floor(t * 2) % 2 === 0) { ctx.fillStyle = ac(0.52); ctx.fillText('█', PX+PW-16, PY+17); }
+        return HDR;
+    }
+
+    function drawLogLines(log, modeT, PX, PY, PW, PH, HDR) {
+        const LH = 13;
+        const maxLines = Math.floor((PH - HDR - 16) / LH);
+        const vis = log.filter(l => l.at <= modeT && l.k !== 'sep');
+        const shown = vis.slice(Math.max(0, vis.length - maxLines));
+        ctx.save();
+        ctx.beginPath(); ctx.rect(PX+2, PY+HDR, PW-4, PH-HDR-14); ctx.clip();
+        shown.forEach((line, i) => {
+            ctx.font = '8px "JetBrains Mono", monospace'; ctx.textAlign = 'left';
+            ctx.fillStyle = line.k==='cmd' ? ac(0.42) : line.k==='hi' ? ac(0.55) : line.k==='ok' ? grn(0.52) : wh(0.26);
+            ctx.fillText(line.s, PX+8, PY+HDR+(i+1)*LH);
+        });
+        ctx.restore();
+        return shown.length;
+    }
+
+    function arrowHead(x,y,dx,dy,color) {
+        ctx.fillStyle=color; ctx.beginPath();
+        ctx.moveTo(x,y);
+        ctx.lineTo(x-dy*4-dx*8,y+dx*4-dy*8);
+        ctx.lineTo(x+dy*4-dx*8,y-dx*4-dy*8);
+        ctx.fill();
+    }
+
+    function roundRect(c, x, y, w, h, r) {
+        c.beginPath();
+        c.moveTo(x+r,y); c.lineTo(x+w-r,y);
+        c.quadraticCurveTo(x+w,y,x+w,y+r);
+        c.lineTo(x+w,y+h-r);
+        c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+        c.lineTo(x+r,y+h);
+        c.quadraticCurveTo(x,y+h,x,y+h-r);
+        c.lineTo(x,y+r);
+        c.quadraticCurveTo(x,y,x+r,y);
+        c.closePath();
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════════
+       MODE A : EMBEDDED COMPILE  (right-side terminal)
+    ══════════════════════════════════════════════════════════════════════════ */
+    const CLOG = [
+        { at:  0.0,  k:'cmd', s:'> arm-none-eabi-gcc 10.3.1' },
+        { at:  0.6,  k:'cmd', s:'> cmake --build . --target ctrl-fw' },
+        { at:  1.2,  k:'dim', s:'[  0%] src/main.c.obj' },
+        { at:  1.55, k:'dim', s:'[  8%] src/gpio_drv.c.obj' },
+        { at:  1.85, k:'dim', s:'[ 16%] src/uart_hal.c.obj' },
+        { at:  2.10, k:'hi',  s:'[ 24%] src/pid_ctrl.c.obj' },
+        { at:  2.35, k:'dim', s:'[ 32%] src/sensor_hal.c.obj' },
+        { at:  2.60, k:'dim', s:'[ 40%] src/pwm_drv.c.obj' },
+        { at:  2.85, k:'dim', s:'[ 48%] src/adc_dma.c.obj' },
+        { at:  3.10, k:'dim', s:'[ 56%] src/i2c_bus.c.obj' },
+        { at:  3.35, k:'hi',  s:'[ 64%] src/rtos_tasks.c.obj' },
+        { at:  3.60, k:'hi',  s:'[ 72%] src/kalman_filt.c.obj' },
+        { at:  3.90, k:'hi',  s:'[ 80%] src/ctrl_loop.c.obj' },
+        { at:  4.45, k:'cmd', s:'[ 88%] Linking: ctrl-fw.elf' },
+        { at:  5.40, k:'ok',  s:'[100%] Build complete.' },
+        { at:  5.65, k:'sep', s:'' },
+        { at:  5.80, k:'cmd', s:'Memory region    Used    Size   %' },
+        { at:  6.05, k:'hi',  s:'FLASH:          48532  1048576  4.6%' },
+        { at:  6.30, k:'hi',  s:'RAM:             8944   196608  4.5%' },
+        { at:  6.55, k:'dim', s:'CCMRAM:              0   65536  0.0%' },
+        { at:  7.00, k:'sep', s:'' },
+        { at:  7.15, k:'cmd', s:'> openocd -f stm32f4discovery.cfg \\' },
+        { at:  7.50, k:'cmd', s:'  -c "program ctrl-fw.elf verify reset"' },
+        { at:  8.00, k:'ok',  s:'JTAG: STM32F407VGTx  [FOUND]' },
+        { at:  8.30, k:'dim', s:'Target voltage: 3.28V' },
+        { at:  8.60, k:'hi',  s:'Flashing \u2192 0x08000000...' },
+        { at: 12.60, k:'ok',  s:'Verify: PASS' },
+        { at: 13.00, k:'ok',  s:'Target reset.' },
+        { at: 13.30, k:'sep', s:'' },
+        { at: 13.50, k:'ok',  s:'[BOOT] STM32F407 @ 168 MHz' },
+        { at: 14.00, k:'dim', s:'[INIT] AHB/APB clocks ... OK' },
+        { at: 14.50, k:'dim', s:'[INIT] UART2 115200 8N1 ... OK' },
+        { at: 15.00, k:'dim', s:'[INIT] SPI1 10 MHz CS=PA4 ... OK' },
+        { at: 15.50, k:'hi',  s:'[INIT] PID Kp=2.0 Ki=0.4 Kd=0.1 ... OK' },
+        { at: 16.00, k:'hi',  s:'[MAIN] ctrl-loop @ 1 kHz  \u25b6' },
+    ];
+
+    function drawEmbeddedCompile(t, modeT) {
+        const PW=Math.min(306,W*0.27), PX=W-38-PW, PY=H*0.06, PH=H*0.87;
+        const HDR = drawTerminalPanel(PX, PY, PW, PH, 'STM32F407 :: arm-none-eabi-gcc');
+        const LH = 13, shown = drawLogLines(CLOG, modeT, PX, PY, PW, PH, HDR);
+
+        if (modeT >= 8.6 && modeT <= 12.6) {
+            const prog = Math.min(1, (modeT-8.6)/4.0);
+            const barY = PY+HDR+(shown+1)*LH, barW = PW-20;
+            ctx.fillStyle = ac(0.10); ctx.fillRect(PX+8,barY,barW,9);
+            ctx.fillStyle = ac(0.45); ctx.fillRect(PX+8,barY,barW*prog,9);
+            ctx.fillStyle = grn(0.48); ctx.font='8px "JetBrains Mono",monospace'; ctx.textAlign='right';
+            ctx.fillText(`${(prog*100).toFixed(0)}%`, PX+PW-6, barY+8);
+        }
+        if (modeT >= 16.02) {
+            const age = modeT-16.02;
+            const e = 2.2*Math.exp(-0.30*age)*Math.sin(t*2.3+0.4);
+            const u = 1.9*e+0.35*Math.cos(t*1.56);
+            const y = 1.5*(1-Math.exp(-0.28*age))*Math.sin(t*1.86+0.7);
+            const lY = PY+HDR+(shown+1)*LH;
+            ctx.fillStyle=ac(0.42); ctx.font='8px "JetBrains Mono",monospace'; ctx.textAlign='left';
+            ctx.fillText(`[CTRL] e=${e>=0?'+':''}${e.toFixed(3)}  u=${u>=0?'+':''}${u.toFixed(3)}  y=${y>=0?'+':''}${y.toFixed(3)}`, PX+8, lY);
+        }
+
+        const tlX=38,tlY=70,tlW=200,tlH=74;
+        ctx.fillStyle='rgba(0,8,10,0.14)'; ctx.fillRect(tlX,tlY,tlW,tlH);
+        ctx.strokeStyle=ac(0.18); ctx.lineWidth=1; ctx.strokeRect(tlX,tlY,tlW,tlH);
+        ctx.strokeStyle=ac(0.36); ctx.lineWidth=1.4;
+        ctx.beginPath(); ctx.moveTo(tlX,tlY+13); ctx.lineTo(tlX,tlY); ctx.lineTo(tlX+13,tlY); ctx.stroke();
+        ctx.fillStyle=ac(0.38); ctx.font='700 7px "JetBrains Mono",monospace'; ctx.textAlign='left';
+        ctx.fillText('// BOARD INFO', tlX+6, tlY+11);
+        [['Board','STM32F407 Discovery'],['MCU','Cortex-M4 @ 168 MHz'],['FLASH','1024 KB   RAM: 192 KB'],['Compiler','arm-none-eabi-gcc 10']].forEach(([k,v],i)=>{
+            const ly=tlY+23+i*12; ctx.fillStyle=ac(0.26); ctx.fillText(k+':',tlX+6,ly); ctx.fillStyle=wh(0.24); ctx.fillText(v,tlX+54,ly);
+        });
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════════
+       MODE B : GDB DEBUG SESSION  (right-side terminal)
+    ══════════════════════════════════════════════════════════════════════════ */
+    const GLOG = [
+        { at:  0.0,  k:'cmd', s:'> arm-none-eabi-gdb ctrl-fw.elf' },
+        { at:  0.7,  k:'cmd', s:'(gdb) target remote localhost:3333' },
+        { at:  1.4,  k:'ok',  s:'0x08000178 in Reset_Handler ()' },
+        { at:  2.0,  k:'cmd', s:'(gdb) monitor reset halt' },
+        { at:  2.5,  k:'dim', s:'target state: halted' },
+        { at:  3.0,  k:'dim', s:'PC: 0x08000178  CPSR: 0x01000000' },
+        { at:  3.6,  k:'cmd', s:'(gdb) break pid_ctrl.c:42' },
+        { at:  4.1,  k:'ok',  s:'Breakpoint 1 at 0x0800234c: line 42' },
+        { at:  4.6,  k:'cmd', s:'(gdb) break sensor_hal.c:87' },
+        { at:  5.1,  k:'ok',  s:'Breakpoint 2 at 0x08003a10: line 87' },
+        { at:  5.6,  k:'cmd', s:'(gdb) continue' },
+        { at:  6.8,  k:'hi',  s:'Breakpoint 1, pid_update()' },
+        { at:  7.1,  k:'dim', s:'  42: pid->err = setpoint - input;' },
+        { at:  7.5,  k:'cmd', s:'(gdb) print pid->err' },
+        { at:  7.9,  k:'hi',  s:'$1 = 0.15500000119  [float]' },
+        { at:  8.3,  k:'cmd', s:'(gdb) print pid->integral' },
+        { at:  8.7,  k:'hi',  s:'$2 = 0.62099998474  [float]' },
+        { at:  9.1,  k:'cmd', s:'(gdb) x/8xw 0x20000200' },
+        { at:  9.6,  k:'dim', s:'0x20000200:  3f000000  3dcccccd' },
+        { at:  9.9,  k:'dim', s:'0x20000208:  3c23d70a  3f4ccccd' },
+        { at: 10.3,  k:'cmd', s:'(gdb) step' },
+        { at: 10.8,  k:'dim', s:'  43: output = Kp*err + Ki*intgrl;' },
+        { at: 11.3,  k:'cmd', s:'(gdb) print pid->output' },
+        { at: 11.7,  k:'hi',  s:'$3 = 0.69000005722  [float]' },
+        { at: 12.1,  k:'cmd', s:'(gdb) continue' },
+        { at: 13.2,  k:'hi',  s:'Breakpoint 2, sensor_read()' },
+        { at: 13.5,  k:'dim', s:'  87: raw = ADC1->DR & 0x0FFF;' },
+        { at: 13.9,  k:'cmd', s:'(gdb) info registers r0 r1 r2' },
+        { at: 14.3,  k:'dim', s:'r0  0x00000d4b  3403' },
+        { at: 14.5,  k:'dim', s:'r1  0x20000200  536871424' },
+        { at: 14.7,  k:'dim', s:'r2  0x00000000  0' },
+        { at: 15.1,  k:'cmd', s:'(gdb) continue' },
+        { at: 16.0,  k:'ok',  s:'[Running at 168 MHz ...]' },
+    ];
+
+    function drawGDB(t, modeT) {
+        const PW=Math.min(306,W*0.27), PX=W-38-PW, PY=H*0.06, PH=H*0.87;
+        const HDR = drawTerminalPanel(PX, PY, PW, PH, 'STM32F407 :: arm-none-eabi-gdb');
+        const shown = drawLogLines(GLOG, modeT, PX, PY, PW, PH, HDR);
+
+        if (modeT >= 16.02) {
+            const LH = 13;
+            const r0 = (0xd4b + Math.floor(Math.sin(t*1.1)*40)) & 0xffff;
+            const r1 = 0x20000200;
+            const r2 = Math.floor((Math.cos(t*0.9)*0.5+0.5)*0xff);
+            const lY = PY+HDR+(shown+1)*LH;
+            ctx.fillStyle=wh(0.28); ctx.font='8px "JetBrains Mono",monospace'; ctx.textAlign='left';
+            ctx.fillText(`r0  0x${r0.toString(16).padStart(8,'0')}  ${r0}`, PX+8, lY);
+            ctx.fillText(`r1  0x${r1.toString(16).padStart(8,'0')}`, PX+8, lY+LH);
+            ctx.fillStyle=ac(0.42);
+            ctx.fillText(`r2  0x${r2.toString(16).padStart(8,'0')}  ${r2}`, PX+8, lY+LH*2);
+        }
+
+        const tlX=38,tlY=70,tlW=200,tlH=86;
+        ctx.fillStyle='rgba(0,8,10,0.14)'; ctx.fillRect(tlX,tlY,tlW,tlH);
+        ctx.strokeStyle=ac(0.18); ctx.lineWidth=1; ctx.strokeRect(tlX,tlY,tlW,tlH);
+        ctx.strokeStyle=ac(0.36); ctx.lineWidth=1.4;
+        ctx.beginPath(); ctx.moveTo(tlX,tlY+13); ctx.lineTo(tlX,tlY); ctx.lineTo(tlX+13,tlY); ctx.stroke();
+        ctx.fillStyle=ac(0.38); ctx.font='700 7px "JetBrains Mono",monospace'; ctx.textAlign='left';
+        ctx.fillText('// CALL STACK', tlX+6, tlY+11);
+        ['#0  pid_update()','#1  ctrl_loop_tick()','#2  TIM2_IRQHandler()','#3  ?? (NVIC)'].forEach((f,i)=>{
+            const ly=tlY+23+i*14;
+            ctx.fillStyle=i===0?ac(0.45):wh(i===1?0.22:0.14);
+            ctx.font=(i===0?'700 ':'')+'7px "JetBrains Mono",monospace';
+            ctx.fillText(f, tlX+6, ly);
+        });
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════════
+       MODE C : NETWORK TOPOLOGY  (peripheral band)
+    ══════════════════════════════════════════════════════════════════════════ */
+    let topoNodes=null, topoEdges=null, topoPackets=[];
+
+    function peripheralXY() {
+        const q=Math.floor(Math.random()*4);
+        if(q===0) return [W*0.03+Math.random()*W*0.94, H*0.03+Math.random()*H*0.24];
+        if(q===1) return [W*0.03+Math.random()*W*0.94, H*0.73+Math.random()*H*0.24];
+        if(q===2) return [W*0.02+Math.random()*W*0.18, H*0.23+Math.random()*H*0.54];
+        return             [W*0.80+Math.random()*W*0.18, H*0.23+Math.random()*H*0.54];
+    }
+
+    function initTopo() {
+        topoNodes=[];
+        const sL=['api.ctrl-sys','db.main:5432','mesh.ctrl'];
+        const rL=['rtr-0A','rtr-1F','rtr-2C','rtr-3B','rtr-4D'];
+        let si=0,ri=0;
+        for(let i=0;i<20;i++){
+            const type=i<3?'server':i<8?'router':'client';
+            const [x,y]=peripheralXY();
+            topoNodes.push({x,y,type,label:type==='server'?sL[si++]:type==='router'?rL[ri++]:`node-${(i-8).toString(16).toUpperCase()}`,phase:Math.random()*Math.PI*2});
+        }
+        topoEdges=[];
+        const thr=Math.min(W,H)*0.33;
+        for(let i=0;i<topoNodes.length;i++)
+            for(let j=i+1;j<topoNodes.length;j++){
+                const dx=topoNodes[i].x-topoNodes[j].x,dy=topoNodes[i].y-topoNodes[j].y;
+                if(Math.sqrt(dx*dx+dy*dy)<thr) topoEdges.push([i,j]);
+            }
+        topoPackets=[];
+    }
+
+    function drawTopology(t) {
+        if(!topoNodes) initTopo();
+        if(topoEdges.length&&Math.random()<0.04){
+            const e=topoEdges[Math.floor(Math.random()*topoEdges.length)];
+            topoPackets.push({edge:e,p:0,speed:0.13+Math.random()*0.28,rev:Math.random()<0.5});
+        }
+        topoPackets.forEach(pk=>{pk.p+=lastDt*pk.speed;});
+        topoPackets=topoPackets.filter(pk=>pk.p<1);
+        topoEdges.forEach(([i,j])=>{
+            const a=topoNodes[i],b=topoNodes[j];
+            ctx.strokeStyle=ac(0.09); ctx.lineWidth=1;
+            ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+        });
+        topoPackets.forEach(pk=>{
+            const[i,j]=pk.edge;
+            const a=pk.rev?topoNodes[j]:topoNodes[i],b=pk.rev?topoNodes[i]:topoNodes[j];
+            ctx.fillStyle=ac2(0.52);
+            ctx.fillRect(lerp(a.x,b.x,pk.p)-2.5,lerp(a.y,b.y,pk.p)-2.5,5,5);
+        });
+        topoNodes.forEach(n=>{
+            const pulse=Math.sin(t*0.84+n.phase)*0.5+0.5;
+            const r=n.type==='server'?7:n.type==='router'?5:3.5;
+            ctx.fillStyle=n.type==='server'?ac(0.58):n.type==='router'?wh(0.40):ac(0.26);
+            ctx.beginPath(); ctx.arc(n.x,n.y,r,0,Math.PI*2); ctx.fill();
+            if(n.type!=='client'){
+                ctx.strokeStyle=ac((1-pulse)*0.10); ctx.lineWidth=1;
+                ctx.beginPath(); ctx.arc(n.x,n.y,r+pulse*22,0,Math.PI*2); ctx.stroke();
+                ctx.fillStyle=n.type==='server'?ac(0.26):wh(0.20);
+                ctx.font='8px "JetBrains Mono",monospace'; ctx.textAlign='left';
+                ctx.fillText(n.label,n.x+r+5,n.y+3);
+            }
+        });
+        ctx.font='8px "JetBrains Mono",monospace'; ctx.fillStyle=ac(0.22); ctx.textAlign='right';
+        ctx.fillText(`NODES  ${topoNodes.length}`,W-48,H-56);
+        ctx.fillText(`EDGES  ${topoEdges.length}`,W-48,H-44);
+        ctx.fillText(`PKT/s  ${topoPackets.length}`,W-48,H-32);
+        ctx.textAlign='left';
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════════
+       MODE D : PID BLOCK DIAGRAM  (bottom area)
+    ══════════════════════════════════════════════════════════════════════════ */
+    function drawBlockDiagram(t) {
+        const MX=W*0.06, MY=H*0.65;
+        const totalW=W*0.88;
+        const BH=H*0.10;
+        const BY=MY+H*0.06;
+        const FBY=BY+H*0.16;
+
+        const sumX=MX+totalW*0.10, sumR=18;
+        const pidX1=MX+totalW*0.22, pidX2=MX+totalW*0.44;
+        const plX1=MX+totalW*0.54, plX2=MX+totalW*0.76;
+        const outX=MX+totalW*0.88;
+        const pidMX=(pidX1+pidX2)/2, plMX=(plX1+plX2)/2;
+
+        ctx.fillStyle='rgba(0,255,255,0.018)';
+        ctx.fillRect(MX-20, MY-10, totalW+40, H*0.38);
+
+        ctx.strokeStyle=ac(0.28); ctx.lineWidth=1.4;
+        ctx.beginPath(); ctx.moveTo(MX,BY); ctx.lineTo(sumX-sumR-2,BY); ctx.stroke();
+        arrowHead(sumX-sumR-2,BY,1,0,ac(0.28));
+        ctx.fillStyle=ac(0.26); ctx.font='9px "JetBrains Mono",monospace'; ctx.textAlign='center';
+        ctx.fillText('r(t)',MX+totalW*0.04,BY-8);
+
+        ctx.strokeStyle=ac(0.38); ctx.lineWidth=1.5;
+        ctx.beginPath(); ctx.arc(sumX,BY,sumR,0,Math.PI*2); ctx.stroke();
+        ctx.fillStyle=ac(0.36); ctx.font='bold 13px serif';
+        ctx.textAlign='center';
+        ctx.fillText('+',sumX-6,BY+4);
+        ctx.fillStyle=ac2(0.30); ctx.fillText('\u2212',sumX+6,BY+5);
+
+        ctx.strokeStyle=ac(0.28); ctx.lineWidth=1.4;
+        ctx.beginPath(); ctx.moveTo(sumX+sumR,BY); ctx.lineTo(pidX1-2,BY); ctx.stroke();
+        arrowHead(pidX1-2,BY,1,0,ac(0.28));
+        ctx.fillStyle=ac(0.26); ctx.font='9px "JetBrains Mono",monospace'; ctx.textAlign='center';
+        ctx.fillText('e(t)',(sumX+sumR+pidX1)/2,BY-8);
+
+        ctx.strokeStyle=ac(0.40); ctx.lineWidth=1.5;
+        ctx.strokeRect(pidX1,BY-BH/2,pidX2-pidX1,BH);
+        ctx.fillStyle='rgba(0,255,255,0.035)';
+        ctx.fillRect(pidX1,BY-BH/2,pidX2-pidX1,BH);
+        ctx.fillStyle=ac(0.55); ctx.font='700 10px "JetBrains Mono",monospace'; ctx.textAlign='center';
+        ctx.fillText('PID CTRL',pidMX,BY-4);
+        ctx.fillStyle=ac(0.28); ctx.font='7px "JetBrains Mono",monospace';
+        ctx.fillText('Kp=2.0  Ki=0.4  Kd=0.1',pidMX,BY+10);
+
+        ctx.strokeStyle=ac(0.28); ctx.lineWidth=1.4;
+        ctx.beginPath(); ctx.moveTo(pidX2,BY); ctx.lineTo(plX1-2,BY); ctx.stroke();
+        arrowHead(plX1-2,BY,1,0,ac(0.28));
+        ctx.fillStyle=ac(0.26); ctx.font='9px "JetBrains Mono",monospace'; ctx.textAlign='center';
+        ctx.fillText('u(t)',(pidX2+plX1)/2,BY-8);
+
+        ctx.strokeStyle=wh(0.38); ctx.lineWidth=1.5;
+        ctx.strokeRect(plX1,BY-BH/2,plX2-plX1,BH);
+        ctx.fillStyle='rgba(180,220,255,0.025)';
+        ctx.fillRect(plX1,BY-BH/2,plX2-plX1,BH);
+        ctx.fillStyle=wh(0.52); ctx.font='700 10px "JetBrains Mono",monospace'; ctx.textAlign='center';
+        ctx.fillText('PLANT',plMX,BY-4);
+        ctx.fillStyle=wh(0.26); ctx.font='7px "JetBrains Mono",monospace';
+        ctx.fillText('G(s) = 1/(s\u00b2+2s+1)',plMX,BY+10);
+
+        ctx.strokeStyle=wh(0.28); ctx.lineWidth=1.4;
+        ctx.beginPath(); ctx.moveTo(plX2,BY); ctx.lineTo(outX,BY); ctx.stroke();
+        ctx.fillStyle=wh(0.52); ctx.beginPath(); ctx.arc(outX,BY,4,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle=wh(0.28); ctx.font='9px "JetBrains Mono",monospace'; ctx.textAlign='left';
+        ctx.fillText('y(t)',outX+8,BY+4);
+
+        ctx.strokeStyle=ac2(0.28); ctx.lineWidth=1.4;
+        ctx.setLineDash([4,8]);
+        ctx.beginPath();
+        ctx.moveTo(outX,BY); ctx.lineTo(outX,FBY);
+        ctx.lineTo(sumX,FBY);
+        ctx.lineTo(sumX,BY+sumR+2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        arrowHead(sumX,BY+sumR+2,0,1,ac2(0.28));
+        ctx.fillStyle=ac2(0.24); ctx.font='8px "JetBrains Mono",monospace'; ctx.textAlign='center';
+        ctx.fillText('feedback',(outX+sumX)/2,FBY+12);
+
+        const LOOP_PTS = [
+            [MX,BY],[sumX-sumR,BY],
+            [sumX+sumR,BY],[pidX1,BY],
+            [pidX2,BY],[plX1,BY],
+            [plX2,BY],[outX,BY],
+            [outX,FBY],[sumX,FBY],[sumX,BY+sumR],
+        ];
+        const totalSegs = LOOP_PTS.length-1;
+        for(let d=0;d<3;d++){
+            const phase=(t*0.45+d/3)%1;
+            const rawSeg=phase*totalSegs;
+            const segIdx=Math.floor(rawSeg);
+            const segFrac=rawSeg-segIdx;
+            if(segIdx>=totalSegs) continue;
+            const [ax,ay]=LOOP_PTS[segIdx];
+            const [bx,by]=LOOP_PTS[segIdx+1];
+            const dotX=lerp(ax,bx,segFrac), dotY=lerp(ay,by,segFrac);
+            const dotColor=segIdx>=8?ac2(0.65):segIdx>=6?wh(0.70):ac(0.70);
+            ctx.fillStyle=dotColor;
+            ctx.beginPath(); ctx.arc(dotX,dotY,3.5,0,Math.PI*2); ctx.fill();
+        }
+
+        const yOut=0.8*(1-Math.exp(-0.5*(t%8)))*Math.sin(t*1.2+0.3);
+        ctx.fillStyle=wh(0.40); ctx.font='700 8px "JetBrains Mono",monospace'; ctx.textAlign='right';
+        ctx.fillText(`y(t) = ${yOut>=0?'+':''}${yOut.toFixed(4)}`,W-48,MY-10);
+        ctx.fillStyle=ac(0.30); ctx.fillText(`e(t) = ${(-yOut*0.3).toFixed(4)}`,W-48,MY+2);
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════════
+       MODE E : GRADIENT DESCENT
+    ══════════════════════════════════════════════════════════════════════════ */
+    const lossF=(w1,w2)=>w1*w1+5*Math.pow(w2-0.25*w1,2);
+    const gradF=(w1,w2)=>{const z=w2-0.25*w1;return[2*w1-2.5*z,10*z];};
+    let gdPaths=null;
+
+    function initGrad(){
+        const gd=[[2.4,1.8]];
+        for(let i=0;i<80;i++){const[w1,w2]=gd[gd.length-1],[g1,g2]=gradF(w1,w2);gd.push([w1-0.08*g1,w2-0.08*g2]);}
+        const sgd=[[2.4,1.8]];
+        for(let i=0;i<80;i++){const[w1,w2]=sgd[sgd.length-1],[g1,g2]=gradF(w1,w2);sgd.push([w1-0.12*(g1+(Math.random()-0.5)*0.42),w2-0.12*(g2+(Math.random()-0.5)*0.42)]);}
+        const mom=[[2.4,1.8]];let v1=0,v2=0;
+        for(let i=0;i<80;i++){const[w1,w2]=mom[mom.length-1],[g1,g2]=gradF(w1,w2);v1=0.85*v1+0.15*g1;v2=0.85*v2+0.15*g2;mom.push([w1-0.18*v1,w2-0.18*v2]);}
+        gdPaths={gd,sgd,mom};
+    }
+
+    function drawGradientDescent(t,modeT){
+        if(!gdPaths) initGrad();
+        const MG=38,pw=Math.min(320,W*0.30),ph=Math.min(240,H*0.34);
+        const px1=W-MG-pw,py2=H-MG,py1=py2-ph;
+        const toS=(w1,w2)=>[px1+(w1+3)/6*pw,py2-(w2+2.5)/5*ph];
+        ctx.fillStyle='rgba(0,8,10,0.14)';ctx.fillRect(px1,py1,pw,ph);
+        ctx.strokeStyle=ac(0.18);ctx.lineWidth=1;ctx.strokeRect(px1,py1,pw,ph);
+        ctx.strokeStyle=ac(0.34);ctx.lineWidth=1.5;
+        ctx.beginPath();ctx.moveTo(px1,py1+15);ctx.lineTo(px1,py1);ctx.lineTo(px1+15,py1);
+        ctx.moveTo(px1+pw-15,py2);ctx.lineTo(px1+pw,py2);ctx.lineTo(px1+pw,py2-15);ctx.stroke();
+        const[ox,oy]=toS(0,0);
+        ctx.strokeStyle=ac(0.12);ctx.lineWidth=1;ctx.setLineDash([2,6]);
+        ctx.beginPath();ctx.moveTo(px1,oy);ctx.lineTo(px1+pw,oy);ctx.moveTo(ox,py1);ctx.lineTo(ox,py2);ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle=ac(0.20);ctx.font='8px "JetBrains Mono",monospace';ctx.textAlign='center';
+        ctx.fillText('\u03b81',px1+pw-7,oy-6);ctx.fillText('\u03b82',ox+9,py1+11);
+        [0.3,0.9,2.0,3.8,6.2,9.5].forEach((k,ci)=>{
+            const r1=Math.sqrt(k),r2=Math.sqrt(k/5);
+            ctx.strokeStyle=ac(ci<2?0.26:ci<4?0.14:0.07);ctx.lineWidth=ci<2?1.0:0.7;
+            ctx.beginPath();
+            for(let s=0;s<=100;s++){const th=(s/100)*Math.PI*2;const[sx,sy]=toS(r1*Math.cos(th),0.25*r1*Math.cos(th)+r2*Math.sin(th));s===0?ctx.moveTo(sx,sy):ctx.lineTo(sx,sy);}
+            ctx.closePath();ctx.stroke();
+        });
+        const[mx,my]=toS(0,0);
+        ctx.fillStyle=ac(0.62);ctx.beginPath();ctx.arc(mx,my,4,0,Math.PI*2);ctx.fill();
+        ctx.strokeStyle=ac(0.22);ctx.lineWidth=1;ctx.setLineDash([2,5]);
+        ctx.beginPath();ctx.arc(mx,my,9,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+        const steps=Math.floor(Math.min(1,modeT/(MODE_DURATION*0.65))*79);
+        [{pts:gdPaths.gd,c:ac(0.48),lw:1.6},{pts:gdPaths.sgd,c:ac2(0.36),lw:1.2},{pts:gdPaths.mom,c:amb(0.42),lw:1.6}].forEach(({pts,c,lw})=>{
+            if(steps<1)return;ctx.strokeStyle=c;ctx.lineWidth=lw;ctx.beginPath();
+            for(let i=0;i<=steps&&i<pts.length;i++){const[sx,sy]=toS(pts[i][0],pts[i][1]);i===0?ctx.moveTo(sx,sy):ctx.lineTo(sx,sy);}
+            ctx.stroke();
+            const h=pts[Math.min(steps,pts.length-1)],[hx,hy]=toS(h[0],h[1]);
+            ctx.fillStyle=c;ctx.beginPath();ctx.arc(hx,hy,3.5,0,Math.PI*2);ctx.fill();
+        });
+        ctx.fillStyle=ac(0.26);ctx.font='700 8px "JetBrains Mono",monospace';ctx.textAlign='left';
+        ctx.fillText('// GRAD DESCENT',px1+5,py1-6);
+        const lcX=38,lcY=72,lcW=132,lcH=68;
+        ctx.fillStyle='rgba(0,8,10,0.14)';ctx.fillRect(lcX,lcY,lcW,lcH);
+        ctx.strokeStyle=ac(0.14);ctx.lineWidth=1;ctx.strokeRect(lcX,lcY,lcW,lcH);
+        ctx.fillStyle=ac(0.22);ctx.font='7px "JetBrains Mono",monospace';ctx.textAlign='left';
+        ctx.fillText('LOSS vs ITER',lcX+3,lcY-4);
+        const L0=lossF(gdPaths.gd[0][0],gdPaths.gd[0][1]);
+        [{pts:gdPaths.gd,c:ac(0.42)},{pts:gdPaths.sgd,c:ac2(0.28)},{pts:gdPaths.mom,c:amb(0.36)}].forEach(({pts,c})=>{
+            ctx.strokeStyle=c;ctx.lineWidth=1;ctx.beginPath();
+            for(let i=0;i<=steps&&i<pts.length;i++){const lv=lossF(pts[i][0],pts[i][1]);const cx2=lcX+(i/79)*lcW,cy2=lcY+lcH-(lv/L0)*lcH*0.90;i===0?ctx.moveTo(cx2,cy2):ctx.lineTo(cx2,cy2);}
+            ctx.stroke();
+        });
+        [[ac(0.34),'GD'],[ac2(0.24),'SGD'],[amb(0.30),'MOM']].forEach(([c,l],i)=>{
+            ctx.fillStyle=c;ctx.fillRect(lcX+2,lcY+lcH+5+i*10,8,5);
+            ctx.fillStyle=ac(0.20);ctx.font='7px "JetBrains Mono",monospace';
+            ctx.fillText(l,lcX+13,lcY+lcH+10+i*10);
+        });
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════════
+       MODE F : ROCKETRY / TRAJECTORY  (bottom-left, brighter)
+    ══════════════════════════════════════════════════════════════════════════ */
+    function drawRocketry(t){
+        const ox=W*0.08,oy=H*0.88,sx=W*0.52,sy=H*0.36;
+        ctx.setLineDash([3,10]);ctx.lineWidth=1;
+        for(let i=1;i<=4;i++){
+            const y=oy-(i/4)*sy;ctx.strokeStyle=ac(0.07);ctx.beginPath();ctx.moveTo(ox,y);ctx.lineTo(ox+sx,y);ctx.stroke();
+            ctx.fillStyle=ac(0.17);ctx.font='8px "JetBrains Mono",monospace';ctx.textAlign='right';ctx.fillText(`${i*125} km`,ox-6,y+4);
+        }
+        ctx.setLineDash([]);
+        ctx.strokeStyle=ac(0.30);ctx.lineWidth=1.6;
+        ctx.beginPath();ctx.moveTo(ox,oy+10);ctx.lineTo(ox,oy-sy-20);ctx.moveTo(ox-10,oy);ctx.lineTo(ox+sx+20,oy);ctx.stroke();
+        ctx.fillStyle=ac(0.30);
+        [[ox,oy-sy-20,0,-1],[ox+sx+20,oy,1,0]].forEach(([x,y,dx,dy])=>{ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-dy*5-dx*9,y+dx*5-dy*9);ctx.lineTo(x+dy*5-dx*9,y-dx*5-dy*9);ctx.fill();});
+        ctx.strokeStyle=ac(0.15);ctx.lineWidth=1;ctx.fillStyle=ac(0.19);ctx.font='8px "JetBrains Mono",monospace';ctx.textAlign='center';
+        for(let i=0;i<=5;i++){const x=ox+(i/5)*sx;ctx.beginPath();ctx.moveTo(x,oy-4);ctx.lineTo(x,oy+4);ctx.stroke();ctx.fillText(`T+${i*72}s`,x,oy+15);}
+        ctx.fillText('TIME (s)',ox+sx*0.5,oy+29);
+        ctx.save();ctx.translate(ox-44,oy-sy*0.5);ctx.rotate(-Math.PI/2);ctx.fillText('ALT (km)',0,0);ctx.restore();
+        ctx.strokeStyle=ac(0.36);ctx.lineWidth=2;ctx.beginPath();
+        for(let i=0;i<=100;i++){const xn=i/100,yn=4*xn*(1-xn);i===0?ctx.moveTo(ox+xn*sx,oy-yn*sy):ctx.lineTo(ox+xn*sx,oy-yn*sy);}ctx.stroke();
+        ctx.strokeStyle=ac2(0.22);ctx.lineWidth=1.4;ctx.setLineDash([5,8]);ctx.beginPath();
+        for(let i=0;i<=100;i++){const xn=i/100,yn=3.4*Math.pow(xn,0.75)*Math.pow(1-xn,1.25);i===0?ctx.moveTo(ox+xn*sx,oy-yn*sy):ctx.lineTo(ox+xn*sx,oy-yn*sy);}ctx.stroke();ctx.setLineDash([]);
+        const rp=(t*0.045)%1,rx=ox+rp*sx,ry=oy-4*rp*(1-rp)*sy;
+        ctx.fillStyle=ac(0.62);ctx.beginPath();ctx.arc(rx,ry,5,0,Math.PI*2);ctx.fill();
+        const slope=4*(1-2*rp),ang=Math.atan2(-slope*sy/sx,1),vLen=32;
+        ctx.strokeStyle=ac2(0.36);ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(rx,ry);ctx.lineTo(rx-Math.cos(ang)*vLen,ry-Math.sin(ang)*vLen);ctx.stroke();
+        const tip={x:rx-Math.cos(ang)*vLen,y:ry-Math.sin(ang)*vLen};
+        ctx.fillStyle=ac2(0.36);ctx.beginPath();ctx.moveTo(tip.x,tip.y);ctx.lineTo(tip.x+Math.cos(ang+0.52)*8,tip.y+Math.sin(ang+0.52)*8);ctx.lineTo(tip.x+Math.cos(ang-0.52)*8,tip.y+Math.sin(ang-0.52)*8);ctx.fill();
+        const apx=ox+0.5*sx,apy=oy-sy;
+        ctx.strokeStyle=ac(0.14);ctx.lineWidth=1;ctx.setLineDash([3,6]);ctx.beginPath();ctx.moveTo(apx,oy);ctx.lineTo(apx,apy);ctx.stroke();ctx.setLineDash([]);
+        ctx.fillStyle=ac(0.26);ctx.font='8px "JetBrains Mono",monospace';ctx.textAlign='left';ctx.fillText('APOGEE',apx+5,apy+11);
+        ctx.fillStyle=ac(0.24);ctx.textAlign='right';
+        ctx.fillText('\u0394v  =  3.200 km/s',W-48,62);ctx.fillText('ISP =  450.0 s',W-48,74);ctx.fillText('m\u2080  =  12400 kg',W-48,86);
+        ctx.textAlign='left';
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════════
+       MODE G : NEURAL NETWORK FORWARD PASS  (ML/DL)
+    ══════════════════════════════════════════════════════════════════════════ */
+    const NLOG = [
+        { at:  0.0, k:'cmd', s:'> python train.py --lr 0.001' },
+        { at:  0.8, k:'dim', s:'Init weights (He normal)' },
+        { at:  1.4, k:'dim', s:'Dataset: 60000 samples loaded' },
+        { at:  2.0, k:'hi',  s:'Epoch  1/40  loss=2.301 acc=11%' },
+        { at:  2.8, k:'hi',  s:'Epoch  4/40  loss=1.843 acc=38%' },
+        { at:  3.6, k:'hi',  s:'Epoch  8/40  loss=1.220 acc=62%' },
+        { at:  4.4, k:'ok',  s:'Epoch 12/40  loss=0.891 acc=74%' },
+        { at:  5.2, k:'ok',  s:'Epoch 16/40  loss=0.670 acc=81%' },
+        { at:  6.2, k:'ok',  s:'Epoch 20/40  loss=0.513 acc=85%' },
+        { at:  7.2, k:'ok',  s:'Epoch 24/40  loss=0.404 acc=88%' },
+        { at:  8.4, k:'ok',  s:'Epoch 28/40  loss=0.330 acc=90%' },
+        { at: 10.0, k:'ok',  s:'Epoch 32/40  loss=0.278 acc=91%' },
+        { at: 12.0, k:'ok',  s:'Epoch 36/40  loss=0.240 acc=92%' },
+        { at: 14.0, k:'ok',  s:'Epoch 40/40  loss=0.211 acc=93%' },
+        { at: 14.8, k:'sep', s:'' },
+        { at: 15.0, k:'cmd', s:'> model.eval()' },
+        { at: 15.6, k:'hi',  s:'Test acc: 91.4%  val_loss: 0.234' },
+        { at: 16.2, k:'ok',  s:'Saving: ctrl_net_v3.pt' },
+    ];
+
+    function drawNeuralNet(t, modeT) {
+        // Network area: left 52% of screen, vertically centred
+        const LAYERS = [3, 5, 4, 2];
+        const LNAMES = ['INPUT', 'HIDDEN\u2081', 'HIDDEN\u2082', 'OUTPUT'];
+        const NX = W*0.06, NY = H*0.14, NW = W*0.46, NH = H*0.72;
+        const colW = NW / (LAYERS.length - 1);
+
+        // Node positions
+        const nodes = LAYERS.map((count, li) => {
+            const x = NX + li * colW;
+            return Array.from({length: count}, (_, ni) => ({
+                x, y: NY + NH * (ni + 1) / (count + 1)
+            }));
+        });
+
+        // Forward pass wave: cycles every 3.5s
+        const passPhase = (modeT % 3.5) / 3.5;
+        const activeLayer = Math.floor(passPhase * (LAYERS.length + 1));
+
+        // Connections
+        for (let li = 0; li < LAYERS.length - 1; li++) {
+            nodes[li].forEach(a => {
+                nodes[li+1].forEach(b => {
+                    const w = Math.abs(Math.sin((a.y + b.y) * 0.027 + li * 1.4));
+                    const alpha = (li < activeLayer) ? w * 0.24 : 0.06;
+                    ctx.strokeStyle = w > 0.5 ? ac(alpha) : ac2(alpha * 0.7);
+                    ctx.lineWidth = 0.7;
+                    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+                });
+            });
+        }
+
+        // Neurons
+        nodes.forEach((layer, li) => {
+            layer.forEach((n, ni) => {
+                const act = Math.sin(t * (1.2 + ni * 0.3) + li * 1.1) * 0.5 + 0.5;
+                const isActive = li <= activeLayer;
+                const r = li === 0 ? 6 : li === LAYERS.length - 1 ? 8 : 5;
+                const col = li === LAYERS.length - 1 ? ac2 : ac;
+
+                if (isActive) {
+                    const g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, r * 3.5);
+                    g.addColorStop(0, col(act * 0.18));
+                    g.addColorStop(1, col(0));
+                    ctx.fillStyle = g;
+                    ctx.beginPath(); ctx.arc(n.x, n.y, r * 3.5, 0, Math.PI*2); ctx.fill();
+                }
+
+                ctx.strokeStyle = isActive ? col(0.42 + act * 0.38) : wh(0.14);
+                ctx.lineWidth = 1.2;
+                ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI*2); ctx.stroke();
+
+                if (isActive) {
+                    ctx.fillStyle = col(act * 0.15);
+                    ctx.fill();
+                }
+            });
+
+            // Layer label
+            ctx.fillStyle = ac(0.20); ctx.font = '700 7px "JetBrains Mono",monospace'; ctx.textAlign = 'center';
+            ctx.fillText(LNAMES[li], layer[0].x, NY - 10);
+        });
+
+        // Right terminal
+        const PW = Math.min(260, W*0.22), PX = W-36-PW, PY = H*0.06, PH = H*0.87;
+        const HDR = drawTerminalPanel(PX, PY, PW, PH, 'CTRL-NET :: torch-train');
+        drawLogLines(NLOG, modeT, PX, PY, PW, PH, HDR);
+
+        // Live stats at bottom
+        if (modeT > 2.0) {
+            const epoch = Math.min(40, Math.floor((modeT / MODE_DURATION) * 40));
+            const loss  = (2.3 * Math.exp(-0.09 * epoch) + 0.18).toFixed(3);
+            const acc   = Math.min(93, Math.round((1 - Math.exp(-0.12 * epoch)) * 100));
+            ctx.font = '700 8px "JetBrains Mono",monospace'; ctx.textAlign = 'left';
+            ctx.fillStyle = ac(0.28);   ctx.fillText(`EPOCH: ${epoch}/40`, NX, H*0.92);
+            ctx.fillStyle = ac2(0.26);  ctx.fillText(`LOSS: ${loss}`, NX+90, H*0.92);
+            ctx.fillStyle = grn(0.26);  ctx.fillText(`ACC: ${acc}%`, NX+185, H*0.92);
+        }
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════════
+       MODE H : FINITE STATE MACHINE  (control-loop FSM spread across screen)
+    ══════════════════════════════════════════════════════════════════════════ */
+    const FSM_STATES = [
+        { id:'IDLE',      rx:0.10, ry:0.18 },
+        { id:'INIT',      rx:0.45, ry:0.07 },
+        { id:'CTRL_RUN',  rx:0.84, ry:0.18 },
+        { id:'MONITOR',   rx:0.88, ry:0.72 },
+        { id:'FAULT',     rx:0.52, ry:0.90 },
+        { id:'SAFE_HALT', rx:0.10, ry:0.72 },
+    ];
+    // [from, to, label]
+    const FSM_EDGES = [
+        [0,1,'start()'], [1,2,'hw_ok()'], [2,3,'tick()'],
+        [3,2,'ok()'], [3,4,'error()'], [4,5,'estop()'],
+        [5,0,'reset()'], [2,5,'E_STOP'],
+    ];
+    const FSM_SEQ = [0,1,2,3,2,3,4,5,0,1,2,3,4,5,0];
+
+    function drawFSM(t, modeT) {
+        const sX = s => s.rx * W, sY = s => s.ry * H;
+
+        // Current state from timeline
+        const seqStep = Math.floor(modeT / 2.5);
+        const transT  = eio((modeT % 2.5) / 2.5);
+        const curIdx  = FSM_SEQ[seqStep % FSM_SEQ.length];
+        const nxtIdx  = FSM_SEQ[(seqStep + 1) % FSM_SEQ.length];
+        const curEdge = FSM_EDGES.find(([a,b]) => a === curIdx && b === nxtIdx);
+
+        // Edges
+        FSM_EDGES.forEach(([ai, bi, lbl]) => {
+            const a = FSM_STATES[ai], b = FSM_STATES[bi];
+            const isActive = curEdge && curEdge[0] === ai && curEdge[1] === bi;
+            ctx.strokeStyle = isActive ? ac(0.36) : ac(0.09);
+            ctx.lineWidth   = isActive ? 1.4 : 0.8;
+            ctx.setLineDash(isActive ? [] : [4,10]);
+            ctx.beginPath(); ctx.moveTo(sX(a), sY(a)); ctx.lineTo(sX(b), sY(b)); ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Arrow on target node edge
+            const dx = sX(b)-sX(a), dy = sY(b)-sY(a), len = Math.hypot(dx,dy);
+            const ndx = dx/len, ndy = dy/len, offR = 34;
+            arrowHead(sX(b)-ndx*offR, sY(b)-ndy*offR, ndx, ndy, isActive ? ac(0.36) : ac(0.09));
+
+            // Label midpoint
+            ctx.fillStyle = isActive ? ac(0.28) : ac(0.09);
+            ctx.font = '7px "JetBrains Mono",monospace'; ctx.textAlign = 'center';
+            ctx.fillText(lbl, (sX(a)+sX(b))/2, (sY(a)+sY(b))/2 - 5);
+        });
+
+        // Animated packet on active edge
+        if (curEdge) {
+            const [ai, bi] = curEdge;
+            const px = lerp(sX(FSM_STATES[ai]), sX(FSM_STATES[bi]), transT);
+            const py = lerp(sY(FSM_STATES[ai]), sY(FSM_STATES[bi]), transT);
+            ctx.fillStyle = ac(0.75);
+            ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI*2); ctx.fill();
+        }
+
+        // State nodes
+        const BW = 64, BH = 26;
+        FSM_STATES.forEach((s, i) => {
+            const sx2 = sX(s), sy2 = sY(s);
+            const isCur  = i === curIdx;
+            const isNext = i === nxtIdx;
+
+            if (isCur) {
+                const g = ctx.createRadialGradient(sx2, sy2, 0, sx2, sy2, 50);
+                g.addColorStop(0, ac(0.10)); g.addColorStop(1, ac(0));
+                ctx.fillStyle = g;
+                ctx.beginPath(); ctx.arc(sx2, sy2, 50, 0, Math.PI*2); ctx.fill();
+            }
+
+            ctx.fillStyle   = isCur ? 'rgba(0,255,255,0.06)' : 'rgba(0,8,10,0.14)';
+            ctx.strokeStyle = isCur ? ac(0.52) : isNext ? ac(0.24) : ac(0.12);
+            ctx.lineWidth   = isCur ? 1.5 : 1;
+            roundRect(ctx, sx2-BW/2, sy2-BH/2, BW, BH, 4);
+            ctx.fill(); ctx.stroke();
+
+            ctx.fillStyle = isCur ? ac(0.82) : isNext ? ac(0.34) : ac(0.18);
+            ctx.font = (isCur ? '700 ' : '') + '8px "JetBrains Mono",monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(s.id, sx2, sy2 + 3);
+        });
+
+        ctx.fillStyle = ac(0.20); ctx.font = '700 8px "JetBrains Mono",monospace'; ctx.textAlign = 'left';
+        ctx.fillText('// CTRL-LOOP FSM', 46, H-32);
+        ctx.fillStyle = ac(0.15); ctx.font = '7px "JetBrains Mono",monospace';
+        ctx.fillText(`ACTIVE: ${FSM_STATES[curIdx].id}`, 46, H-20);
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════════
+       MODE I : KALMAN FILTER  (state estimation visualisation)
+    ══════════════════════════════════════════════════════════════════════════ */
+    let kalmanMeas = null;
+
+    function initKalman() {
+        kalmanMeas = [];
+        for (let i = 0; i <= 200; i++) {
+            const xn    = i / 200;
+            const truth = Math.sin(xn * Math.PI * 3) * 0.80 + xn * 0.30;
+            kalmanMeas.push({ xn, truth, meas: truth + (Math.random()-0.5)*0.55 });
+        }
+    }
+
+    function drawKalman(t, modeT) {
+        if (!kalmanMeas) initKalman();
+
+        // Plot area: right half, vertically centred
+        const PX=W*0.48, PY=H*0.12, PW=W*0.46, PH=H*0.55;
+
+        ctx.fillStyle='rgba(0,8,10,0.15)'; ctx.fillRect(PX,PY,PW,PH);
+        ctx.strokeStyle=ac(0.18); ctx.lineWidth=1; ctx.strokeRect(PX,PY,PW,PH);
+        ctx.strokeStyle=ac(0.38); ctx.lineWidth=1.4;
+        ctx.beginPath();
+        ctx.moveTo(PX,PY+16); ctx.lineTo(PX,PY); ctx.lineTo(PX+16,PY);
+        ctx.moveTo(PX+PW-16,PY+PH); ctx.lineTo(PX+PW,PY+PH); ctx.lineTo(PX+PW,PY+PH-16);
+        ctx.stroke();
+        ctx.fillStyle=ac(0.42); ctx.font='700 8px "JetBrains Mono",monospace'; ctx.textAlign='left';
+        ctx.fillText('KALMAN FILTER :: state estimation', PX+8, PY+14);
+
+        const PL=PX+24, PR=PX+PW-14, PT=PY+28, PB=PY+PH-26;
+        const pw2=PR-PL, ph2=PB-PT;
+
+        // Grid
+        ctx.strokeStyle=ac(0.07); ctx.lineWidth=1; ctx.setLineDash([2,8]);
+        ctx.beginPath();
+        for(let i=1;i<=4;i++){const gy=PT+ph2*i/4;ctx.moveTo(PL,gy);ctx.lineTo(PR,gy);}
+        ctx.stroke(); ctx.setLineDash([]);
+
+        const toP = (xn,yn) => [PL+xn*pw2, PB-((yn+1)/2.2)*ph2];
+        const showN = Math.floor(Math.min(1, modeT/(MODE_DURATION*0.85)) * kalmanMeas.length);
+
+        // Ground truth
+        ctx.strokeStyle=wh(0.22); ctx.lineWidth=1.5; ctx.beginPath();
+        kalmanMeas.slice(0,showN).forEach((p,i)=>{const[px2,py2]=toP(p.xn,p.truth);i===0?ctx.moveTo(px2,py2):ctx.lineTo(px2,py2);});
+        ctx.stroke();
+
+        // Noisy measurements
+        kalmanMeas.slice(0,showN).forEach((p,i)=>{
+            if(i%4!==0)return;
+            const[px2,py2]=toP(p.xn,p.meas);
+            ctx.fillStyle=ac2(0.30); ctx.beginPath(); ctx.arc(px2,py2,2,0,Math.PI*2); ctx.fill();
+        });
+
+        // Kalman estimate (1-D, Q=0.01, R=0.09)
+        if (showN > 1) {
+            let xe=kalmanMeas[0].meas, Pe=1.0;
+            const Q=0.01, R=0.09;
+            const est=[{xn:kalmanMeas[0].xn, e:xe, P:Pe}];
+            for(let i=1;i<showN;i++){
+                Pe+=Q;
+                const K=Pe/(Pe+R);
+                xe+=K*(kalmanMeas[i].meas-xe);
+                Pe*=(1-K);
+                est.push({xn:kalmanMeas[i].xn, e:xe, P:Pe});
+            }
+
+            // Uncertainty band
+            ctx.fillStyle=ac(0.04); ctx.beginPath();
+            est.forEach((p,i)=>{const[px2,py2]=toP(p.xn,p.e+Math.sqrt(p.P)*1.5);i===0?ctx.moveTo(px2,py2):ctx.lineTo(px2,py2);});
+            for(let i=est.length-1;i>=0;i--){const[px2,py2]=toP(est[i].xn,est[i].e-Math.sqrt(est[i].P)*1.5);ctx.lineTo(px2,py2);}
+            ctx.closePath(); ctx.fill();
+
+            // Estimate line
+            ctx.strokeStyle=ac(0.52); ctx.lineWidth=1.8; ctx.beginPath();
+            est.forEach((p,i)=>{const[px2,py2]=toP(p.xn,p.e);i===0?ctx.moveTo(px2,py2):ctx.lineTo(px2,py2);});
+            ctx.stroke();
+
+            const lP=est[est.length-1].P;
+            ctx.fillStyle=ac(0.28); ctx.font='8px "JetBrains Mono",monospace'; ctx.textAlign='right';
+            ctx.fillText(`K = ${(lP/(lP+R)).toFixed(4)}`, PR, PB+14);
+            ctx.fillText(`P = ${lP.toFixed(4)}`, PR-90, PB+14);
+        }
+
+        // Legend
+        [[wh(0.30),'\u2501 truth'],[ac2(0.28),'\u2022 measured'],[ac(0.50),'\u2501 k\u00e2lman']].forEach(([c,l],i)=>{
+            ctx.fillStyle=c; ctx.font='7px "JetBrains Mono",monospace'; ctx.textAlign='left';
+            ctx.fillText(l, PX+i*100, PY+PH+12);
+        });
+
+        // Left info panel
+        const iX=38, iY=H*0.22, iW=160, iH=72;
+        ctx.fillStyle='rgba(0,8,10,0.14)'; ctx.fillRect(iX,iY,iW,iH);
+        ctx.strokeStyle=ac(0.14); ctx.lineWidth=1; ctx.strokeRect(iX,iY,iW,iH);
+        ctx.strokeStyle=ac(0.30); ctx.lineWidth=1.2;
+        ctx.beginPath(); ctx.moveTo(iX,iY+12); ctx.lineTo(iX,iY); ctx.lineTo(iX+12,iY); ctx.stroke();
+        ctx.fillStyle=ac(0.32); ctx.font='700 7px "JetBrains Mono",monospace'; ctx.textAlign='left';
+        ctx.fillText('// KF PARAMS', iX+5, iY+10);
+        [['Q (proc noise)','0.0100'],['R (meas noise)','0.0900'],['x\u2080 (init state)','0.0000'],['P\u2080 (init cov)','1.0000']].forEach(([k,v],i)=>{
+            ctx.fillStyle=ac(0.20); ctx.fillText(k+':',iX+5,iY+22+i*11);
+            ctx.fillStyle=wh(0.24); ctx.textAlign='right'; ctx.fillText(v,iX+iW-6,iY+22+i*11); ctx.textAlign='left';
+        });
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════════
+       MODE J : SERVICE MESH / DEVOPS CONTAINER STACK
+    ══════════════════════════════════════════════════════════════════════════ */
+    const SVC = [
+        { name:'nginx',       port:':443',  st:'ok'   },
+        { name:'ctrl-api',    port:':8080', st:'ok'   },
+        { name:'msg-broker',  port:':5672', st:'ok'   },
+        { name:'db-primary',  port:':5432', st:'ok'   },
+        { name:'db-replica',  port:':5432', st:'warn' },
+        { name:'monitor',     port:':9090', st:'ok'   },
+    ];
+    const SVC_E = [[0,1],[1,2],[1,3],[2,3],[3,4],[1,5],[0,5]];
+    let svcPkt = [];
+
+    function drawDockerStack(t, modeT) {
+        const CW=Math.min(188,W*0.16), CH=36, GAP=20;
+        const totalH = SVC.length*CH+(SVC.length-1)*GAP;
+        const PX = W-38-CW, startY = (H-totalH)/2;
+        const np = SVC.map((_,i)=>({ x:PX+CW/2, y:startY+i*(CH+GAP)+CH/2 }));
+
+        // Packets
+        if(Math.random()<0.06){
+            const e=SVC_E[Math.floor(Math.random()*SVC_E.length)];
+            svcPkt.push({e,p:0,sp:0.28+Math.random()*0.36,rv:Math.random()<0.35});
+        }
+        svcPkt.forEach(pk=>{pk.p+=lastDt*pk.sp;});
+        svcPkt=svcPkt.filter(pk=>pk.p<1);
+
+        // Edges
+        SVC_E.forEach(([ai,bi])=>{
+            const a=np[ai],b=np[bi];
+            ctx.strokeStyle=ac(0.10); ctx.lineWidth=1; ctx.setLineDash([3,9]);
+            ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+            ctx.setLineDash([]);
+        });
+
+        // Packets
+        svcPkt.forEach(pk=>{
+            const [ai,bi]=pk.e, a=pk.rv?np[bi]:np[ai], b=pk.rv?np[ai]:np[bi];
+            ctx.fillStyle=ac2(0.48);
+            ctx.beginPath(); ctx.arc(lerp(a.x,b.x,pk.p),lerp(a.y,b.y,pk.p),2.5,0,Math.PI*2); ctx.fill();
+        });
+
+        // Containers
+        SVC.forEach((svc,i)=>{
+            const{x,y}=np[i], bx=x-CW/2, by=y-CH/2;
+            ctx.fillStyle='rgba(0,8,10,0.18)';
+            ctx.strokeStyle=svc.st==='warn'?amb(0.30):ac(0.20);
+            ctx.lineWidth=1;
+            roundRect(ctx,bx,by,CW,CH,3); ctx.fill(); ctx.stroke();
+
+            ctx.fillStyle=svc.st==='ok'?grn(0.72):amb(0.72);
+            ctx.beginPath(); ctx.arc(bx+10,y,3.5,0,Math.PI*2); ctx.fill();
+
+            ctx.fillStyle=svc.st==='warn'?amb(0.58):ac(0.52);
+            ctx.font='700 8px "JetBrains Mono",monospace'; ctx.textAlign='left';
+            ctx.fillText(svc.name,bx+20,y-4);
+            ctx.fillStyle=wh(0.22); ctx.font='7px "JetBrains Mono",monospace';
+            ctx.fillText(svc.port,bx+20,y+8);
+        });
+
+        // Left: compose snippet panel
+        const dX=38, dY=H*0.14, dW=204, dH=118;
+        ctx.fillStyle='rgba(0,8,10,0.14)'; ctx.fillRect(dX,dY,dW,dH);
+        ctx.strokeStyle=ac(0.14); ctx.lineWidth=1; ctx.strokeRect(dX,dY,dW,dH);
+        ctx.strokeStyle=ac(0.28); ctx.lineWidth=1.2;
+        ctx.beginPath(); ctx.moveTo(dX,dY+12); ctx.lineTo(dX,dY); ctx.lineTo(dX+12,dY); ctx.stroke();
+        ctx.fillStyle=ac(0.30); ctx.font='700 7px "JetBrains Mono",monospace'; ctx.textAlign='left';
+        ctx.fillText('// compose.yml', dX+5, dY+11);
+        ['services:','  ctrl-api:','    image: ctrl/api:latest','    replicas: 2','  db-primary:','    image: postgres:15','    volumes: [pgdata:/var/lib]','  monitor:','    image: prom/prometheus:v2',].forEach((l,i)=>{
+            ctx.fillStyle=(!l.startsWith('  '))?ac(0.28):wh(0.18);
+            ctx.font='7px "JetBrains Mono",monospace';
+            ctx.fillText(l,dX+5,dY+23+i*9.8);
+        });
+
+        ctx.fillStyle=ac(0.20); ctx.font='8px "JetBrains Mono",monospace'; ctx.textAlign='right';
+        ctx.fillText(`SVCS  ${SVC.length}`,W-48,H-56);
+        ctx.fillText(`PKT/s ${svcPkt.length}`,W-48,H-44);
+        ctx.fillText(`MESH  UP`,W-48,H-32);
+        ctx.textAlign='left';
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════════
+       MODE 11 — HEX GRID
+    ══════════════════════════════════════════════════════════════════════════ */
+    function drawHexGrid(t) {
+        const S = 28; // hex radius (pointy-top)
+        const HW = Math.sqrt(3) * S;
+        const HH = 2 * S;
+        const cols = Math.ceil(W / HW) + 3;
+        const rows = Math.ceil(H / (HH * 0.75)) + 3;
+        const drift = (t * 5) % HW;
+
+        ctx.lineWidth = 0.5;
+
+        for (let r = -1; r < rows; r++) {
+            for (let c = -1; c < cols; c++) {
+                const cx = c * HW + (r % 2 === 0 ? 0 : HW / 2) - drift;
+                const cy = r * HH * 0.75;
+                const dx = cx - W * 0.5, dy = cy - H * 0.5;
+                const dist = Math.sqrt(dx*dx + dy*dy) / (Math.sqrt(W*W + H*H) * 0.5);
+                const pulse = Math.sin(dist * 7 - t * 1.1) * 0.5 + 0.5;
+                ctx.strokeStyle = ac(0.04 + pulse * 0.11);
+                ctx.beginPath();
+                for (let i = 0; i < 6; i++) {
+                    const a = Math.PI / 6 + (Math.PI / 3) * i;
+                    const vx = cx + S * Math.cos(a), vy = cy + S * Math.sin(a);
+                    i === 0 ? ctx.moveTo(vx, vy) : ctx.lineTo(vx, vy);
+                }
+                ctx.closePath();
+                ctx.stroke();
+            }
+        }
+
+        // Orbiting bright hexagon highlights
+        for (let i = 0; i < 4; i++) {
+            const ang = t * 0.18 + i * Math.PI / 2;
+            const rad = Math.min(W, H) * 0.22;
+            const hcx = W * 0.5 + Math.cos(ang) * rad;
+            const hcy = H * 0.5 + Math.sin(ang) * rad * 0.55;
+            const col = Math.round((hcx + drift) / HW), row = Math.round(hcy / (HH * 0.75));
+            const scx = col * HW + (row % 2 === 0 ? 0 : HW / 2) - drift;
+            const scy = row * HH * 0.75;
+            ctx.strokeStyle = ac(0.55);
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for (let j = 0; j < 6; j++) {
+                const a = Math.PI / 6 + (Math.PI / 3) * j;
+                const vx = scx + S * Math.cos(a), vy = scy + S * Math.sin(a);
+                j === 0 ? ctx.moveTo(vx, vy) : ctx.lineTo(vx, vy);
+            }
+            ctx.closePath();
+            ctx.stroke();
+            const g = ctx.createRadialGradient(scx, scy, 0, scx, scy, S);
+            g.addColorStop(0, ac(0.07)); g.addColorStop(1, ac(0));
+            ctx.fillStyle = g; ctx.fill();
+        }
+        ctx.lineWidth = 1;
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════════
+       MODE 12 — SIERPIŃSKI TRIANGLE (Chaos Game)
+    ══════════════════════════════════════════════════════════════════════════ */
+    function drawSierpinski(t) {
+        const pad  = Math.min(W, H) * 0.06;
+        const midX = W * 0.5;
+        const topY = pad;
+        const botY = H - pad;
+        const halfW = (H - 2 * pad) * Math.sqrt(3) / 2;
+
+        // Triangle vertices
+        const V = [
+            [midX,           topY],
+            [midX - halfW,   botY],
+            [midX + halfW,   botY],
+        ];
+
+        // Warm-up chaos game for this frame's starting point
+        if (!sierpPt) {
+            sierpPt = { x: Math.random(), y: Math.random() };
+            for (let i = 0; i < 30; i++) {
+                const v = V[Math.floor(Math.random() * 3)];
+                sierpPt.x = (sierpPt.x + v[0]) / 2;
+                sierpPt.y = (sierpPt.y + v[1]) / 2;
+            }
+        }
+
+        // Draw outline triangle faintly
+        ctx.strokeStyle = ac(0.08);
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(V[0][0], V[0][1]);
+        ctx.lineTo(V[1][0], V[1][1]);
+        ctx.lineTo(V[2][0], V[2][1]);
+        ctx.closePath();
+        ctx.stroke();
+
+        // Chaos game: 7000 points per frame, batched in single path
+        const ITERS = 7000;
+        let { x, y } = sierpPt;
+
+        // Colour varies slowly with time
+        const hue = (t * 8) % 60; // oscillates accent vs accent2
+        ctx.fillStyle = hue < 30 ? ac(0.38) : ac2(0.28);
+        ctx.beginPath();
+        for (let i = 0; i < ITERS; i++) {
+            const v = V[Math.floor(Math.random() * 3)];
+            x = (x + v[0]) / 2;
+            y = (y + v[1]) / 2;
+            ctx.rect(x - 0.8, y - 0.8, 1.6, 1.6);
+        }
+        ctx.fill();
+
+        sierpPt = { x, y };
+
+        // Vertex glow dots
+        for (let i = 0; i < 3; i++) {
+            const pulse = Math.sin(t * 1.2 + i * 2.09) * 0.5 + 0.5;
+            const g = ctx.createRadialGradient(V[i][0], V[i][1], 0, V[i][0], V[i][1], 30);
+            g.addColorStop(0, ac(0.12 * pulse));
+            g.addColorStop(1, ac(0));
+            ctx.fillStyle = g;
+            ctx.beginPath(); ctx.arc(V[i][0], V[i][1], 30, 0, Math.PI * 2); ctx.fill();
+        }
+
+        // Info panel
+        const PX = W - 218, PY = 58;
+        drawTerminalPanel(PX, PY, 198, 68, 'SIERPINSKI-CHAOS');
+        ctx.font = '9px "JetBrains Mono",monospace';
+        ctx.fillStyle = ac(0.42);
+        ctx.textAlign = 'left';
+        ctx.fillText(`pts/frame: ${ITERS}`, PX + 10, PY + 36);
+        ctx.fillText(`rule: midpoint / 3 verts`, PX + 10, PY + 50);
+        ctx.fillText(`dim ≈ 1.585`, PX + 10, PY + 64);
+        ctx.lineWidth = 1;
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════════
+       MODE 13 — GAUSSIAN DISTRIBUTION  N(0, 1)
+    ══════════════════════════════════════════════════════════════════════════ */
+    function drawGaussian(t) {
+        const PX = W * 0.10, PY = H * 0.13, PW = W * 0.80, PH = H * 0.58;
+        const baseline = PY + PH;
+        const xMin = -4.3, xMax = 4.3;
+        const PDF_MAX = 1 / Math.sqrt(2 * Math.PI);
+        const pdf = x => Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);
+        const cx2 = x => PX + (x - xMin) / (xMax - xMin) * PW;
+        const cy2 = y => baseline - (y / PDF_MAX) * PH * 0.84;
+
+        // Sigma bands (68 / 95 / 99.7 rule) — very gentle green fills
+        const BANDS = [
+            { s: 3, alpha: 0.045, pct: '99.7%' },
+            { s: 2, alpha: 0.085, pct: '95.4%' },
+            { s: 1, alpha: 0.14,  pct: '68.3%' },
+        ];
+        BANDS.forEach(({ s, alpha }) => {
+            ctx.fillStyle = grn(alpha);
+            ctx.beginPath();
+            ctx.moveTo(cx2(-s), cy2(0));
+            for (let xi = -s; xi <= s; xi += 0.04) ctx.lineTo(cx2(xi), cy2(pdf(xi)));
+            ctx.lineTo(cx2(s), cy2(0));
+            ctx.closePath(); ctx.fill();
+        });
+
+        // Ghost white area fill under curve
+        ctx.fillStyle = wh(0.035);
+        ctx.beginPath();
+        ctx.moveTo(cx2(xMin), cy2(0));
+        for (let xi = xMin; xi <= xMax; xi += 0.05) ctx.lineTo(cx2(xi), cy2(pdf(xi)));
+        ctx.lineTo(cx2(xMax), cy2(0));
+        ctx.closePath(); ctx.fill();
+
+        // Bell curve — soft outer glow + crisp line
+        [{ lw: 4, col: wh(0.07) }, { lw: 1.4, col: wh(0.70) }].forEach(({ lw, col }) => {
+            ctx.strokeStyle = col; ctx.lineWidth = lw;
+            ctx.beginPath();
+            for (let xi = xMin; xi <= xMax; xi += 0.04) {
+                const px2 = cx2(xi), py2 = cy2(pdf(xi));
+                xi <= xMin + 0.04 ? ctx.moveTo(px2, py2) : ctx.lineTo(px2, py2);
+            }
+            ctx.stroke();
+        });
+
+        // X-axis
+        ctx.strokeStyle = wh(0.20); ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(PX - 8, baseline); ctx.lineTo(PX + PW + 8, baseline); ctx.stroke();
+
+        // Tick marks and axis labels
+        ctx.font = '9px "JetBrains Mono",monospace'; ctx.textAlign = 'center';
+        [-3,-2,-1,0,1,2,3].forEach(xi => {
+            const tx = cx2(xi);
+            ctx.strokeStyle = wh(0.14); ctx.lineWidth = 0.8;
+            ctx.beginPath(); ctx.moveTo(tx, baseline); ctx.lineTo(tx, baseline + 5); ctx.stroke();
+            ctx.fillStyle = wh(0.32);
+            ctx.fillText(xi === 0 ? '\u03bc' : `${xi > 0 ? '+' : ''}${xi}\u03c3`, tx, baseline + 17);
+        });
+
+        // Sigma boundary dashes + percentage labels
+        BANDS.forEach(({ s, pct }) => {
+            ctx.strokeStyle = grn(0.20); ctx.lineWidth = 0.7; ctx.setLineDash([3, 7]);
+            [-s, s].forEach(xi => {
+                ctx.beginPath();
+                ctx.moveTo(cx2(xi), baseline - 2); ctx.lineTo(cx2(xi), cy2(pdf(xi)) - 5);
+                ctx.stroke();
+            });
+            ctx.setLineDash([]);
+            ctx.fillStyle = grn(0.50); ctx.font = '8px "JetBrains Mono",monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText(pct, cx2(s) + 5, cy2(pdf(s)) - 8);
+        });
+
+        // Travelling dot along the curve
+        const phase = (t * 0.14) % 1;
+        const dotXi = xMin + phase * (xMax - xMin);
+        const dotX2 = cx2(dotXi), dotY2 = cy2(pdf(dotXi));
+        const gDot = ctx.createRadialGradient(dotX2, dotY2, 0, dotX2, dotY2, 9);
+        gDot.addColorStop(0, wh(0.85)); gDot.addColorStop(1, wh(0));
+        ctx.fillStyle = gDot;
+        ctx.beginPath(); ctx.arc(dotX2, dotY2, 9, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = wh(0.80);
+        ctx.beginPath(); ctx.arc(dotX2, dotY2, 2.5, 0, Math.PI * 2); ctx.fill();
+
+        // Terminal info panel
+        const iX = W - 220, iY = 60;
+        drawTerminalPanel(iX, iY, 196, 92, 'GAUSSIAN-DIST');
+        ctx.font = '9px "JetBrains Mono",monospace'; ctx.fillStyle = wh(0.45); ctx.textAlign = 'left';
+        ctx.fillText('X ~ N(\u03bc, \u03c3\u00b2)', iX + 10, iY + 36);
+        ctx.fillText('f(x)=e^(-x\u00b2/2)/\u221a2\u03c0', iX + 10, iY + 50);
+        ctx.fillText('\u03bc=0   \u03c3=1', iX + 10, iY + 64);
+        ctx.fillText('E[X]=0   Var[X]=1', iX + 10, iY + 78);
+        ctx.lineWidth = 1;
+
+        ctx.fillStyle = wh(0.16); ctx.font = '7px "JetBrains Mono",monospace'; ctx.textAlign = 'left';
+        ctx.fillText('// STANDARD NORMAL DISTRIBUTION', PX, baseline + 34);
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════════
+       MODE 14 — GAME OF LIFE (Gosper Glider Gun)
+    ══════════════════════════════════════════════════════════════════════════ */
+    const GOSPER_GUN = [
+        [24,0],[22,1],[24,1],
+        [12,2],[13,2],[20,2],[21,2],[34,2],[35,2],
+        [11,3],[15,3],[20,3],[21,3],[34,3],[35,3],
+        [0,4],[1,4],[10,4],[16,4],[20,4],[21,4],
+        [0,5],[1,5],[10,5],[14,5],[16,5],[17,5],[22,5],[24,5],
+        [10,6],[16,6],[24,6],
+        [11,7],[15,7],
+        [12,8],[13,8],
+    ];
+
+    function initGOL() {
+        const CELL = 9;
+        golCols = Math.floor(W / CELL);
+        golRows = Math.floor(H / CELL);
+        golGrid     = new Uint8Array(golCols * golRows);
+        golNextGrid = new Uint8Array(golCols * golRows);
+        golTick = 0;
+        const placements = [
+            [3, 3],
+            [Math.floor(golCols * 0.5), Math.floor(golRows * 0.55)],
+        ];
+        for (const [ox, oy] of placements) {
+            for (const [gc, gr] of GOSPER_GUN) {
+                const c = ox + gc, r = oy + gr;
+                if (c >= 0 && c < golCols && r >= 0 && r < golRows)
+                    golGrid[r * golCols + c] = 1;
+            }
+        }
+    }
+
+    function stepGOL() {
+        for (let r = 0; r < golRows; r++) {
+            for (let c = 0; c < golCols; c++) {
+                let n = 0;
+                for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+                    if (dr === 0 && dc === 0) continue;
+                    n += golGrid[((r+dr+golRows)%golRows)*golCols + (c+dc+golCols)%golCols];
+                }
+                const alive = golGrid[r*golCols+c];
+                golNextGrid[r*golCols+c] = (alive && (n===2||n===3)) || (!alive && n===3) ? 1 : 0;
+            }
+        }
+        const tmp = golGrid; golGrid = golNextGrid; golNextGrid = tmp;
+    }
+
+    function drawGameOfLife(t, modeT) {
+        const CELL = 9;
+        if (!golGrid) initGOL();
+
+        golTick++;
+        if (golTick % 8 === 0) stepGOL();
+
+        // Draw live cells
+        ctx.fillStyle = ac(0.6);
+        let alive = 0;
+        for (let r = 0; r < golRows; r++) {
+            for (let c = 0; c < golCols; c++) {
+                if (golGrid[r*golCols+c]) {
+                    alive++;
+                    ctx.fillRect(c*CELL+1, r*CELL+1, CELL-2, CELL-2);
+                }
+            }
+        }
+
+        // Subtle grid lines (lighter than cells)
+        ctx.strokeStyle = ac(0.035);
+        ctx.lineWidth = 0.3;
+        for (let r = 0; r <= golRows; r++) {
+            ctx.beginPath(); ctx.moveTo(0, r*CELL); ctx.lineTo(W, r*CELL); ctx.stroke();
+        }
+        for (let c = 0; c <= golCols; c++) {
+            ctx.beginPath(); ctx.moveTo(c*CELL, 0); ctx.lineTo(c*CELL, H); ctx.stroke();
+        }
+
+        // Info panel
+        const PX = W - 215, PY = 58;
+        drawTerminalPanel(PX, PY, 195, 72, 'CONWAY-GOL');
+        ctx.font = '9px "JetBrains Mono",monospace';
+        ctx.fillStyle = grn(0.5);
+        ctx.textAlign = 'left';
+        ctx.fillText(`gen: ${Math.floor(golTick/8)}`, PX + 10, PY + 38);
+        ctx.fillText(`alive: ${alive}`, PX + 10, PY + 52);
+        ctx.fillText(`rule: B3/S23`, PX + 10, PY + 66);
+        ctx.lineWidth = 1;
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════════
+       MODE 15 — INTEGRATED CIRCUIT TRACES
+    ══════════════════════════════════════════════════════════════════════════ */
+    function initICLayout() {
+        const hTraceCount = 9, vTraceCount = 14;
+        const traces = [], pads = [], chips = [], vias = [];
+
+        for (let i = 0; i < hTraceCount; i++) {
+            const y = (i + 0.6) / hTraceCount * H;
+            traces.push({ x0: 0, y0: y, x1: W, y1: y, horiz: true });
+        }
+        for (let i = 0; i < vTraceCount; i++) {
+            const x = (i + 0.6) / vTraceCount * W;
+            traces.push({ x0: x, y0: 0, x1: x, y1: H, horiz: false });
+        }
+
+        const hT = traces.filter(t => t.horiz), vT = traces.filter(t => !t.horiz);
+        for (const h of hT) {
+            for (const v of vT) {
+                if (Math.random() < 0.22) pads.push({ x: v.x0, y: h.y0 });
+            }
+        }
+
+        const chipCount = 4 + Math.floor(Math.random() * 3);
+        for (let i = 0; i < chipCount; i++) {
+            const cw = 70 + Math.random() * 90, ch = 55 + Math.random() * 55;
+            chips.push({
+                x: 30 + Math.random() * (W - cw - 60),
+                y: 30 + Math.random() * (H - ch - 60),
+                w: cw, h: ch,
+                id: ['U' + (i+1), 'IC' + (i*7+3), 'MCU-'+i, 'FPGA'][i % 4],
+            });
+        }
+
+        for (let i = 0; i < 35; i++) {
+            vias.push({ x: Math.random() * W, y: Math.random() * H });
+        }
+
+        icLayout = { traces, pads, chips, vias };
+        icPkts = [];
+    }
+
+    function drawICTraces(t, modeT) {
+        if (!icLayout) initICLayout();
+
+        // Traces
+        ctx.strokeStyle = ac(0.15);
+        ctx.lineWidth = 1.4;
+        for (const tr of icLayout.traces) {
+            ctx.beginPath();
+            tr.horiz ? (ctx.moveTo(tr.x0, tr.y0), ctx.lineTo(tr.x1, tr.y0))
+                     : (ctx.moveTo(tr.x0, tr.y0), ctx.lineTo(tr.x0, tr.y1));
+            ctx.stroke();
+        }
+
+        // Pads
+        ctx.fillStyle = ac(0.32);
+        for (const p of icLayout.pads) ctx.fillRect(p.x - 4, p.y - 4, 8, 8);
+
+        // Chip outlines
+        ctx.lineWidth = 1;
+        for (const chip of icLayout.chips) {
+            ctx.strokeStyle = ac(0.38);
+            ctx.strokeRect(chip.x, chip.y, chip.w, chip.h);
+            const pinCount = Math.round(chip.w / 18);
+            for (let i = 1; i <= pinCount; i++) {
+                const px = chip.x + i / (pinCount + 1) * chip.w;
+                ctx.beginPath(); ctx.moveTo(px, chip.y); ctx.lineTo(px, chip.y - 8); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(px, chip.y + chip.h); ctx.lineTo(px, chip.y + chip.h + 8); ctx.stroke();
+            }
+            // Chip fill + label
+            ctx.fillStyle = 'rgba(0,12,10,0.25)';
+            ctx.fillRect(chip.x + 1, chip.y + 1, chip.w - 2, chip.h - 2);
+            ctx.font = '8px "JetBrains Mono",monospace';
+            ctx.fillStyle = ac(0.3);
+            ctx.textAlign = 'center';
+            ctx.fillText(chip.id, chip.x + chip.w / 2, chip.y + chip.h / 2 + 3);
+            ctx.textAlign = 'left';
+        }
+
+        // Vias
+        ctx.strokeStyle = ac2(0.25);
+        ctx.lineWidth = 0.7;
+        for (const v of icLayout.vias) {
+            ctx.beginPath(); ctx.arc(v.x, v.y, 2.5, 0, Math.PI * 2); ctx.stroke();
+        }
+
+        // Animated signal packets
+        if (Math.random() < 0.05 && icPkts.length < 24) {
+            const tr = icLayout.traces[Math.floor(Math.random() * icLayout.traces.length)];
+            icPkts.push({ tr, p: 0, speed: 0.25 + Math.random() * 0.5 });
+        }
+        icPkts.forEach(pk => { pk.p += lastDt * pk.speed; });
+        icPkts = icPkts.filter(pk => pk.p < 1);
+
+        ctx.fillStyle = ac(0.85);
+        for (const pk of icPkts) {
+            const px = pk.tr.horiz ? lerp(pk.tr.x0, pk.tr.x1, pk.p) : pk.tr.x0;
+            const py = pk.tr.horiz ? pk.tr.y0 : lerp(pk.tr.y0, pk.tr.y1, pk.p);
+            ctx.beginPath(); ctx.arc(px, py, 2.5, 0, Math.PI * 2); ctx.fill();
+        }
+
+        // Info panel
+        const PX = 44, PY = 58;
+        drawTerminalPanel(PX, PY, 200, 58, 'IC-TRACE-VIEW');
+        ctx.font = '9px "JetBrains Mono",monospace';
+        ctx.fillStyle = grn(0.45);
+        ctx.textAlign = 'left';
+        ctx.fillText(`signals: ${icPkts.length}`, PX + 10, PY + 36);
+        ctx.fillText(`layer: METAL-1`, PX + 10, PY + 50);
+        ctx.lineWidth = 1;
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════════
+       MODE DEFINITIONS
+    ══════════════════════════════════════════════════════════════════════════ */
+    const MODE_LABELS = [
+        'EMBEDDED-COMPILE','GDB-DEBUG','NET-TOPOLOGY',
+        'PID-BLOCK-DIAGRAM','GRAD-DESCENT','TRAJECTORY',
+        'NEURAL-NET','FSM-DIAGRAM','KALMAN-FILTER','SVC-MESH',
+        'HEX-GRID','SIERPINSKI-CHAOS','GAUSSIAN-DIST','CONWAY-GOL','IC-TRACES',
+    ];
+    const MODES = [
+        drawEmbeddedCompile, drawGDB, drawTopology,
+        drawBlockDiagram, drawGradientDescent, drawRocketry,
+        drawNeuralNet, drawFSM, drawKalman, drawDockerStack,
+        drawHexGrid, drawSierpinski, drawGaussian, drawGameOfLife, drawICTraces,
+    ];
+    const N = MODES.length;
+
+    function drawModeLabel(modeT, idx) {
+        const norm=modeT/currentModeDuration, half=FADE/currentModeDuration;
+        const a=norm<half?eio(norm/half):norm>1-half?eio((1-norm)/half):1;
+        ctx.globalAlpha=a*0.15;
+        ctx.font='8px "JetBrains Mono",monospace'; ctx.fillStyle=ac(1); ctx.textAlign='left';
+        ctx.fillText(`[${idx+1}/${N}]  ${MODE_LABELS[idx]}`, 46, H-32);
+        for(let i=0;i<N;i++){
+            ctx.fillStyle=i===idx?ac(1):wh(0.22);
+            ctx.beginPath(); ctx.arc(46+i*9,H-20,2,0,Math.PI*2); ctx.fill();
+        }
+    }
+
+    /* ── Mode picker ────────────────────────────────────────────────────────── */
+    function pickNextMode() {
+        const HEX = 10;  // index of drawHexGrid in MODES
+        // Build weighted pool: HEX-GRID gets 4 extra slots (~4× more likely)
+        const pool = [];
+        for (let i = 0; i < N; i++) pool.push(i);
+        pool.push(HEX, HEX, HEX, HEX);
+
+        // Exclude the last 3 played modes so nothing repeats within 4 turns
+        const exclude = new Set(modeHistory.slice(-3));
+        const candidates = pool.filter(i => !exclude.has(i));
+        // Fallback: if all candidates excluded (tiny pool), allow all
+        const chosen = (candidates.length > 0 ? candidates : pool)[Math.floor(Math.random() * (candidates.length || pool.length))];
+
+        modeHistory.push(chosen);
+        if (modeHistory.length > 3) modeHistory.shift();
+        return chosen;
+    }
+
+    /* ── Render loop ────────────────────────────────────────────────────────── */
+    function resize() {
+        W=canvas.width=window.innerWidth; H=canvas.height=window.innerHeight;
+        topoNodes=null; gdPaths=null; kalmanMeas=null; svcPkt=[];
+        golGrid=null; icLayout=null; icPkts=[];
+        sierpPt=null;
+    }
+
+    function frame(ts) {
+        const dt=Math.min((ts-lastTs)/1000,0.05);
+        lastTs=ts; lastDt=dt; t+=dt; modeT+=dt;
+
+        const phaseDuration = restPhase ? restDuration : currentModeDuration;
+        if (modeT >= phaseDuration) {
+            modeT=0;
+            if (!restPhase) {
+                restPhase=true;
+                restDuration=5+Math.random()*10;   // 5–15 s interval
+            } else {
+                restPhase=false;
+                currentModeDuration=20+Math.random()*280;   // 20 s – 5 min
+                modeIdx=pickNextMode();
+                topoNodes=null; gdPaths=null; kalmanMeas=null; svcPkt=[];
+                golGrid=null; icLayout=null; icPkts=[];
+                sierpPt=null;
+            }
+        }
+
+        ctx.clearRect(0,0,W,H);
+        if (!restPhase) {
+            ctx.save(); ctx.globalAlpha=eio(Math.min(1,modeT/FADE))*eio(Math.min(1,(currentModeDuration-modeT)/FADE))*DIM;
+            MODES[modeIdx](t, modeT);
+            ctx.restore();
+            ctx.save(); drawModeLabel(modeT, modeIdx); ctx.restore();
+        }
+        requestAnimationFrame(frame);
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+    requestAnimationFrame(ts => { lastTs=ts; requestAnimationFrame(frame); });
+}());

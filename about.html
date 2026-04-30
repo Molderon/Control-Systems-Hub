@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About — Control Systems, TU-Sofia Plovdiv</title>
+    <link href="ControlSystems.css" rel="stylesheet">
+    <style>
+        .blog-container {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 120px 24px 80px;
+        }
+
+        .blog-header {
+            margin-bottom: 56px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 32px;
+        }
+
+        .blog-header .page-label {
+            font-size: 0.65rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--primary-cyan);
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .blog-header h1 {
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            font-weight: 900;
+            line-height: 1.1;
+            background: linear-gradient(135deg, var(--primary-cyan), var(--primary-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 16px;
+        }
+
+        .blog-header .blog-tagline {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.7;
+        }
+
+        .post {
+            margin-bottom: 52px;
+            padding-bottom: 52px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .post:last-child {
+            border-bottom: none;
+        }
+
+        .post-meta {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+
+        .post-date {
+            font-size: 0.62rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+
+        .post-tag {
+            font-size: 0.58rem;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--primary-cyan);
+            border: 1px solid var(--border-color);
+            padding: 2px 8px;
+        }
+
+        .post h2 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 14px;
+            line-height: 1.3;
+        }
+
+        .post h2 a {
+            color: inherit;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .post h2 a:hover {
+            color: var(--primary-cyan);
+        }
+
+        .post p {
+            color: var(--text-secondary);
+            line-height: 1.85;
+            font-size: 0.92rem;
+            margin-bottom: 14px;
+        }
+
+        .post p + p {
+            margin-top: 0;
+        }
+
+        .post .read-more {
+            font-size: 0.68rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--primary-cyan);
+            text-decoration: none;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 2px;
+            transition: border-color 0.2s;
+        }
+
+        .post .read-more:hover {
+            border-color: var(--primary-cyan);
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.68rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            text-decoration: none;
+            margin-bottom: 40px;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover { color: var(--primary-cyan); }
+        .back-link::before { content: '←'; }
+
+        .blog-footer-note {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            letter-spacing: 1px;
+            text-align: center;
+            padding-top: 40px;
+            opacity: 0.6;
+        }
+    </style>
+</head>
+<body id="top">
+    <div class="cyber-bg" aria-hidden="true">
+        <div class="cyber-gradient"></div>
+    </div>
+    <div class="grid-overlay" aria-hidden="true"><div class="grid-lines"></div><div class="grid-glow"></div></div>
+    <div class="scanlines" aria-hidden="true"></div>
+    <div class="noise-overlay" aria-hidden="true"></div>
+
+    <nav>
+        <div class="nav-container">
+            <a href="index.html" class="logo">./ControlSystems.sh</a>
+            <ul class="nav-links">
+                <li><a href="index.html#pricing">Contacts</a></li>
+                <li><a href="index.html#contact">Message us</a></li>
+                <li><a href="index.html#features">Contents</a></li>
+            </ul>
+            <div class="nav-bottom">
+                <a href="irc.html" class="cyber-button">
+                    <span class="btn-content">IRC Room</span>
+                    <span class="btn-glitch"></span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="blog-container">
+        <a href="index.html" class="back-link">Back to main</a>
+
+        <header class="blog-header">
+            <span class="page-label">// DEPARTMENT.LOG</span>
+            <h1>About the Department</h1>
+            <p class="blog-tagline">Research notes, announcements, and dispatches from the Control Systems department at the Technical University of Sofia, Plovdiv Branch.</p>
+        </header>
+
+        <article class="post">
+            <div class="post-meta">
+                <span class="post-date">2025 — 04 — 10</span>
+                <span class="post-tag">Research</span>
+            </div>
+            <h2><a href="#">Adaptive Control in the Age of Neural Networks</a></h2>
+            <p>Classical control theory built its foundations on precise mathematical models of physical systems — transfer functions, state-space representations, stability criteria derived from first principles. For decades this was sufficient. But as the systems we engineer become more complex, nonlinear, and context-dependent, the assumption of a fixed, well-characterized plant begins to strain under the weight of reality.</p>
+            <p>Our department has been investigating a class of hybrid approaches that treat the neural network not as a replacement for the classical controller, but as an online system identification layer. Early results on a simulated two-joint robotic arm suggest that this architecture can reduce steady-state error by 38% compared to a conventional PID tuned to the linearized model, without sacrificing the theoretical stability guarantees that make control systems trustworthy in safety-critical deployments.</p>
+            <a href="#" class="read-more">Continue reading →</a>
+        </article>
+
+        <article class="post">
+            <div class="post-meta">
+                <span class="post-date">2025 — 03 — 22</span>
+                <span class="post-tag">Announcement</span>
+            </div>
+            <h2><a href="#">Spring Seminar Series: Digital Twins for Industrial Control</a></h2>
+            <p>Beginning the first Friday of April, the department's weekly seminar series will pivot to the topic of Digital Twin architectures applied to industrial PLC environments. The series is open to all BSc, MSc, and doctoral students. External participants from industry are welcome — contact Room №4319 to register.</p>
+            <p>The first session will cover the theoretical underpinnings of synchronization between a live physical plant and its virtual counterpart, with a focus on maintaining sub-second latency over industrial Ethernet. Subsequent sessions will present case studies from the automotive and chemical processing sectors, followed by an open workshop where student teams will instrument a small-scale laboratory process with a prototype twin.</p>
+            <a href="#" class="read-more">Continue reading →</a>
+        </article>
+
+        <article class="post">
+            <div class="post-meta">
+                <span class="post-date">2025 — 02 — 14</span>
+                <span class="post-tag">Student Work</span>
+            </div>
+            <h2><a href="#">ControlHack 2025 — Results and Reflections</a></h2>
+            <p>Forty-one students across twelve teams competed in this year's ControlHack, the department's annual embedded systems sprint. Teams were given 30 hours and a Raspberry Pi-based hardware kit to implement a closed-loop position controller for a DC motor — with a twist: the motor's load was changed silently at the halfway mark, requiring adaptive or robust designs to maintain performance.</p>
+            <p>The winning team, composed of three third-year MSc students, implemented a model reference adaptive controller with a gradient-descent parameter update law. Their controller recovered full performance within four seconds of the load change, a result that impressed the panel of academic and industry judges alike. Full write-ups from the top three teams will be posted to the department repository next month.</p>
+            <a href="#" class="read-more">Continue reading →</a>
+        </article>
+
+        <article class="post">
+            <div class="post-meta">
+                <span class="post-date">2025 — 01 — 08</span>
+                <span class="post-tag">Faculty</span>
+            </div>
+            <h2><a href="#">New Collaboration: Fault Detection with the TU-Sofia Main Campus</a></h2>
+            <p>We are pleased to announce a formal research collaboration with the Department of Automation at the main TU-Sofia campus. The joint project focuses on fault detection and isolation in closed-loop control systems, a field of increasing relevance as autonomous systems proliferate across manufacturing, energy, and transportation.</p>
+            <p>The collaboration will produce two jointly supervised PhD candidates beginning in the autumn semester, a shared laboratory testbed for injection of simulated actuator and sensor faults, and a planned joint publication targeting the IEEE Transactions on Control Systems Technology. Further details will be shared at the spring faculty assembly.</p>
+            <a href="#" class="read-more">Continue reading →</a>
+        </article>
+
+        <article class="post">
+            <div class="post-meta">
+                <span class="post-date">2024 — 11 — 30</span>
+                <span class="post-tag">Infrastructure</span>
+            </div>
+            <h2><a href="#">Laboratory Expansion: New Real-Time Hardware-in-the-Loop Rig</a></h2>
+            <p>The department has taken delivery of a new hardware-in-the-loop testing station, funded through the university's equipment renewal program. The rig supports real-time simulation at 1 kHz step rates, interfaces with standard MATLAB/Simulink code generation workflows, and includes a reconfigurable analog I/O front-end for connecting physical actuators and sensors.</p>
+            <p>The station will be available to research students from the spring semester. Priority access will be given to doctoral candidates whose thesis work involves experimental validation. Contact the lab supervisor in Room №4319 to schedule an orientation session and discuss your experimental requirements.</p>
+            <a href="#" class="read-more">Continue reading →</a>
+        </article>
+
+        <p class="blog-footer-note">CONTROL SYSTEMS DEPT. — TU-SOFIA PLOVDIV BRANCH — ALL RIGHTS RESERVED</p>
+    </main>
+
+    <script src="ControlSystems.js"></script>
+    <script src="ui-enhancements.js"></script>
+</body>
+</html>

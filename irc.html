@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IRC Room — Control Systems, TU-Sofia Plovdiv</title>
+    <link href="ControlSystems.css" rel="stylesheet">
+    <style>
+        .irc-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 120px 24px 80px;
+            text-align: center;
+        }
+
+        .irc-terminal {
+            max-width: 640px;
+            width: 100%;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            padding: 0;
+            position: relative;
+        }
+
+        .irc-terminal::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            background: linear-gradient(135deg,
+                rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.3),
+                transparent 50%,
+                rgba(var(--accent2-r), var(--accent2-g), var(--accent2-b), 0.2)
+            );
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .irc-title-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 14px;
+            background: linear-gradient(90deg,
+                rgba(var(--chrome-r), var(--chrome-g), var(--chrome-b), 0.88) 0%,
+                rgba(var(--chrome-r), var(--chrome-g), var(--chrome-b), 0.55) 45%,
+                rgba(0, 0, 0, 0.97) 100%
+            );
+            border-bottom: 1px solid rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.4);
+        }
+
+        .irc-title-text {
+            font-size: 0.6rem;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            color: var(--text-primary);
+            font-family: inherit;
+        }
+
+        .irc-win-btns {
+            display: flex;
+            gap: 6px;
+        }
+
+        .irc-win-btn {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 1px solid rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.28);
+            background: transparent;
+            color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.5);
+            font-size: 0.45rem;
+            cursor: default;
+        }
+
+        .irc-body {
+            padding: 48px 40px 40px;
+        }
+
+        .irc-prompt-line {
+            font-size: 0.62rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.7);
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .irc-prompt-line::before {
+            content: '>';
+            color: var(--primary-cyan);
+            animation: blink 1.1s step-end infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0; }
+        }
+
+        .irc-heading {
+            font-size: clamp(1.8rem, 5vw, 2.8rem);
+            font-weight: 900;
+            line-height: 1.1;
+            background: linear-gradient(135deg, var(--primary-cyan), var(--primary-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+
+        .irc-sub {
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            line-height: 1.8;
+            margin-bottom: 36px;
+        }
+
+        .irc-divider {
+            width: 48px;
+            height: 1px;
+            background: linear-gradient(90deg,
+                transparent,
+                rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.6),
+                transparent
+            );
+            margin: 0 auto 36px;
+        }
+
+        .irc-features {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 40px;
+            text-align: left;
+            display: inline-block;
+        }
+
+        .irc-features li {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
+            line-height: 2;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .irc-features li::before {
+            content: '—';
+            position: absolute;
+            left: 0;
+            color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.6);
+        }
+
+        .irc-status {
+            font-size: 0.58rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.5);
+            border-top: 1px solid var(--border-color);
+            padding-top: 14px;
+            margin-top: 8px;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.68rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            text-decoration: none;
+            margin-bottom: 40px;
+            transition: color 0.2s;
+            position: absolute;
+            top: 100px;
+            left: 24px;
+        }
+
+        .back-link:hover { color: var(--primary-cyan); }
+        .back-link::before { content: '←'; }
+    </style>
+</head>
+<body id="top">
+    <div class="cyber-bg" aria-hidden="true">
+        <div class="cyber-gradient"></div>
+    </div>
+    <div class="grid-overlay" aria-hidden="true"><div class="grid-lines"></div><div class="grid-glow"></div></div>
+    <div class="scanlines" aria-hidden="true"></div>
+    <div class="noise-overlay" aria-hidden="true"></div>
+
+    <nav>
+        <div class="nav-container">
+            <a href="index.html" class="logo">./ControlSystems.sh</a>
+            <ul class="nav-links">
+                <li><a href="index.html#pricing">Contacts</a></li>
+                <li><a href="index.html#contact">Message us</a></li>
+                <li><a href="index.html#features">Contents</a></li>
+            </ul>
+            <div class="nav-bottom">
+                <a href="irc.html" class="cyber-button">
+                    <span class="btn-content">IRC Room</span>
+                    <span class="btn-glitch"></span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="irc-container">
+        <a href="index.html" class="back-link">Back to main</a>
+
+        <div class="irc-terminal">
+            <div class="irc-title-bar">
+                <span class="irc-title-text">IRC.SH — SESSION PENDING</span>
+                <div class="irc-win-btns">
+                    <div class="irc-win-btn">×</div>
+                    <div class="irc-win-btn">−</div>
+                    <div class="irc-win-btn">□</div>
+                </div>
+            </div>
+            <div class="irc-body">
+                <div class="irc-prompt-line">CONNECTING TO CHANNEL #control-systems</div>
+                <h1 class="irc-heading">Coming Soon</h1>
+                <p class="irc-sub">
+                    The department's IRC room is under construction.<br>
+                    A real-time text channel for students, researchers, and collaborators is on the way.
+                </p>
+                <div class="irc-divider"></div>
+                <ul class="irc-features">
+                    <li>Open channel for discussion and Q&amp;A</li>
+                    <li>Direct messaging between lab members</li>
+                    <li>Pinned resources and reading lists</li>
+                    <li>Bot integrations for seminar reminders</li>
+                    <li>Persistent logs accessible to enrolled students</li>
+                </ul>
+                <p class="irc-status">STATUS: OFFLINE &nbsp;·&nbsp; ETA: TBD &nbsp;·&nbsp; CHECK BACK LATER</p>
+            </div>
+        </div>
+    </main>
+
+    <script src="ControlSystems.js"></script>
+    <script src="ui-enhancements.js"></script>
+</body>
+</html>

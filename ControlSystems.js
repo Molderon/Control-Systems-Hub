@@ -86,23 +86,44 @@ if (document.readyState === 'loading') {
 function generateMatrixRain() {
     const matrixRain = document.getElementById('matrixRain');
     if (!matrixRain) return;
-    const characters = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホ마미무메모ヤユヨラリルレロワヲン';
-    const columns = Math.floor(window.innerWidth / 20);
-    
-    for (let i = 0; i < columns; i++) {
-        const column = document.createElement('div');
-        column.className = 'matrix-column';
-        column.style.left = `${i * 20}px`;
-        column.style.animationDuration = `${Math.random() * 5 + 10}s`;
-        column.style.animationDelay = `${Math.random() * 5}s`;
-        
-        let text = '';
-        const charCount = Math.floor(Math.random() * 20 + 10);
-        for (let j = 0; j < charCount; j++) {
-            text += characters[Math.floor(Math.random() * characters.length)] + ' ';
-        }
-        column.textContent = text;
-        matrixRain.appendChild(column);
+
+    const FORMULAS = [
+        // Physics
+        'E=mc²', 'F=ma', 'Ĥψ=Eψ', 'ΔxΔp≥ℏ/2', 'S=k·lnΩ',
+        'E=ℏω', '∇×B=μ₀J', '∇·E=ρ/ε₀', 'ds²=-c²dt²+dx²',
+        // Pure Math
+        'e^(iπ)+1=0', '∑1/n²=π²/6', '∫e^(-x²)dx=√π/2',
+        'lim(1+1/n)^n=e', '∀ε∃δ:|f(x)-L|<ε',
+        'det(AB)=det(A)·det(B)', '∮F·ds=∬(∇×F)·dA',
+        // Statistics
+        'P(A|B)=P(B|A)P(A)/P(B)', 'X~N(μ,σ²)',
+        'σ²=E[(X-μ)²]', 'ρ=Cov(X,Y)/σₓσᵧ',
+        'CLT:X̄→N(μ,σ²/n)', 'H(X)=-∑p·log₂p',
+        // CS / Algorithms
+        'O(n·logn)', 'T(n)=2T(n/2)+n', 'P≠NP?',
+        'VC-dim(H)<∞', 'MinCut=MaxFlow',
+        // Deep Learning
+        'L=-∑yᵢ·log(ŷᵢ)', 'θ←θ-α∇θL',
+        'aˡ=σ(Wˡaˡ⁻¹+bˡ)', 'softmax(xᵢ)=eˣⁱ/∑eˣʲ',
+        'Attn=softmax(QKᵀ/√d)V', '||W||₂→regularize',
+        // Control Systems
+        'ẋ=Ax+Bu', 'y=Cx+Du', 'G(s)=C(sI-A)⁻¹B',
+        'det(sI-A)=0', 'K=LQR(A,B,Q,R)',
+        'J=∫(xᵀQx+uᵀRu)dt', 'PM=arg(G(jω))+180°',
+    ];
+
+    // Sparse: ~10 columns across the full width, placed randomly
+    const count = Math.max(6, Math.floor(window.innerWidth / 180));
+
+    for (let i = 0; i < count; i++) {
+        const col = document.createElement('div');
+        col.className = 'matrix-column';
+        col.style.left  = `${(i / count) * 90 + Math.random() * (90 / count)}%`;
+        col.style.animationDuration = `${Math.random() * 14 + 22}s`;   // 22–36s slow fall
+        col.style.animationDelay    = `${Math.random() * 40}s`;         // 0–40s stagger → rare
+
+        col.textContent = FORMULAS[Math.floor(Math.random() * FORMULAS.length)];
+        matrixRain.appendChild(col);
     }
 }
 
@@ -296,3 +317,230 @@ setInterval(() => {
 const style = document.createElement('style');
 style.textContent = `@keyframes fadeOut { 0% { opacity: 0.7; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-50px); } }`;
 document.head.appendChild(style);
+
+
+/* ==========================================================
+   ENHANCED SMOOTH SCROLL — nav flash line on click
+   ========================================================== */
+document.querySelectorAll('a[href^="#"], .mobile-menu-nav a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', () => {
+        // Spawn flash line
+        const flash = document.createElement('div');
+        flash.className = 'nav-flash-line';
+        document.body.appendChild(flash);
+        flash.addEventListener('animationend', () => flash.remove());
+
+        // Pulse the target section
+        const href = anchor.getAttribute('href');
+        if (href && href.length > 1 && href !== '#top') {
+            const target = document.querySelector(href);
+            if (target) {
+                target.classList.remove('section-targeted');
+                void target.offsetWidth;
+                target.classList.add('section-targeted');
+                setTimeout(() => target.classList.remove('section-targeted'), 1300);
+            }
+        }
+    });
+});
+
+/* ==========================================================
+   WIN-PANEL BOOT SEQUENCE — animate on viewport entry
+   ========================================================== */
+(function initWinPanelBoot() {
+    const panels = document.querySelectorAll(
+        '.feature-tabs.win-panel, .feature-content.win-panel, .pricing-card.win-panel, .contact-form.win-panel, .contact-info.win-panel'
+    );
+
+    const bootObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && !entry.target.classList.contains('booted')) {
+                entry.target.classList.add('booted');
+                bootObserver.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.12 });
+
+    panels.forEach(p => bootObserver.observe(p));
+})();
+
+/* ==========================================================
+   THEME SWITCHER
+   ========================================================== */
+(function initThemeSwitcher() {
+    const toggleBtn  = document.getElementById('themeToggleBtn');
+    const panel      = document.getElementById('themePanel');
+    const overlay    = document.getElementById('themeOverlay');
+    const closeBtn   = document.getElementById('themePanelClose');
+    const cards      = document.querySelectorAll('.theme-card');
+
+    if (!toggleBtn || !panel || !overlay) return;
+
+    const THEMES = {
+        cyber:       { bg: '#0f051a', accent1: '#00ffff',  accent2: '#ff00ff' },
+        'pink-blood':{ bg: '#050007', accent1: '#f17e97',  accent2: '#CE0D3C' },
+        temerald:    { bg: '#121111', accent1: '#4ade7f',  accent2: '#d4953b' },
+        neovoid:     { bg: '#000000', accent1: '#00BFFF',  accent2: '#FF0040' },
+        eva01:       { bg: '#0d0020', accent1: '#adff2f',  accent2: '#7c4dff' },
+        catppuccin:  { bg: '#181825', accent1: '#89b4fa',  accent2: '#cba6f7' },
+        aura:        { bg: '#15161e', accent1: '#CBC3E3',  accent2: '#FFAFCC' },
+        caroline:    { bg: '#1a0e0b', accent1: '#d4879d',  accent2: '#e07d44' },
+    };
+
+    function openPanel() {
+        panel.classList.add('open');
+        overlay.classList.add('open');
+        panel.setAttribute('aria-hidden', 'false');
+        toggleBtn.setAttribute('aria-expanded', 'true');
+    }
+
+    function closePanel() {
+        panel.classList.remove('open');
+        overlay.classList.remove('open');
+        panel.setAttribute('aria-hidden', 'true');
+        toggleBtn.setAttribute('aria-expanded', 'false');
+    }
+
+    function applyTheme(name) {
+        // Strip all theme classes
+        document.body.classList.forEach(cls => {
+            if (cls.startsWith('theme-')) document.body.classList.remove(cls);
+        });
+
+        if (name !== 'cyber') {
+            document.body.classList.add(`theme-${name}`);
+        }
+
+        // Update cursor glow color (injected by existing JS, hard-coded rgba)
+        const t = THEMES[name] || THEMES.cyber;
+        const glowEl = document.querySelector('div[style*="radial-gradient(circle, rgba(0, 255, 255"]');
+        if (glowEl) {
+            const r = parseInt(t.accent1.slice(1,3),16);
+            const g = parseInt(t.accent1.slice(3,5),16);
+            const b = parseInt(t.accent1.slice(5,7),16);
+            glowEl.style.background = `radial-gradient(circle, rgba(${r},${g},${b},0.1) 0%, transparent 70%)`;
+        }
+
+        // Mark active card
+        cards.forEach(c => c.classList.toggle('is-active', c.dataset.theme === name));
+
+        // Update status bar
+        const statusEl = panel.querySelector('.win-status-bar');
+        if (statusEl) statusEl.textContent = `THEME APPLIED: ${name.toUpperCase()}`;
+
+        localStorage.setItem('cs-theme', name);
+    }
+
+    // Restore saved theme
+    const saved = localStorage.getItem('cs-theme');
+    if (saved && THEMES[saved]) applyTheme(saved);
+
+    toggleBtn.addEventListener('click', () => {
+        panel.classList.contains('open') ? closePanel() : openPanel();
+    });
+
+    if (closeBtn)  closeBtn.addEventListener('click', closePanel);
+    overlay.addEventListener('click', closePanel);
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && panel.classList.contains('open')) closePanel();
+    });
+
+    cards.forEach(card => {
+        card.addEventListener('click', () => {
+            applyTheme(card.dataset.theme);
+        });
+    });
+})();
+
+/* ── Staff Directory Help Panel ────────────────────────────────────────── */
+(function initHelpPanel() {
+    const btn = document.getElementById('staffHelpBtn');
+    if (!btn) return;
+
+    const LINES = [
+        { cls: 'help-prompt', text: '$ help --staff-directory' },
+        { cls: 'help-heading', text: '// HOW TO REACH US' },
+        { cls: '', text: 'Use the contact form on the left.' },
+        { cls: '', text: 'Include your name, subject & message.' },
+        { cls: 'help-heading', text: '// OFFICE HOURS' },
+        { cls: '', text: 'Mon\u2013Fri · 10:00\u201314:00 (local time).' },
+        { cls: '', text: 'Medev: by appointment (currently away).' },
+        { cls: 'help-heading', text: '// WHAT TO INCLUDE' },
+        { cls: '', text: 'Course / topic, student ID if applicable.' },
+        { cls: 'help-prompt', text: '$ _' },
+    ];
+
+    const panel = document.createElement('div');
+    panel.className = 'help-panel';
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-label', 'Staff Directory Help');
+    panel.innerHTML = `
+        <div class="help-panel-bar">
+            <span class="help-panel-title">HELP.DAT — staff/directory</span>
+            <button class="help-panel-close" aria-label="Close">×</button>
+        </div>
+        <div class="help-panel-body">
+            ${LINES.map(l => `<span class="help-line${l.cls ? ' ' + l.cls : ''}">${l.text}</span>`).join('\n')}
+        </div>`;
+
+    document.body.appendChild(panel);
+
+    const closeBtn = panel.querySelector('.help-panel-close');
+    let typeTimers = [];
+
+    function positionPanel() {
+        const r = btn.getBoundingClientRect();
+        const pw = 340;
+        let left = r.left;
+        if (left + pw > window.innerWidth - 16) left = window.innerWidth - pw - 16;
+        panel.style.left  = left + 'px';
+        panel.style.top   = (r.bottom + 10) + 'px';
+    }
+
+    function clearTimers() {
+        typeTimers.forEach(id => clearTimeout(id));
+        typeTimers = [];
+    }
+
+    function reveal() {
+        positionPanel();
+        panel.classList.add('visible');
+        const lines = panel.querySelectorAll('.help-line');
+        lines.forEach(l => l.classList.remove('revealed'));
+        clearTimers();
+        lines.forEach((l, i) => {
+            typeTimers.push(setTimeout(() => l.classList.add('revealed'), i * 110));
+        });
+    }
+
+    function hide() {
+        panel.classList.remove('visible');
+        clearTimers();
+    }
+
+    let open = false;
+
+    btn.addEventListener('click', e => {
+        e.stopPropagation();
+        open = !open;
+        open ? reveal() : hide();
+    });
+
+    closeBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        open = false;
+        hide();
+    });
+
+    document.addEventListener('click', e => {
+        if (open && !panel.contains(e.target) && e.target !== btn) {
+            open = false;
+            hide();
+        }
+    });
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && open) { open = false; hide(); }
+    });
+})();

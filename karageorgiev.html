@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ivelin Karageorgiev — Control Systems, TU-Sofia Plovdiv</title>
+    <link href="ControlSystems.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+    <style>
+        .profile-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 140px 24px 80px;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.68rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            text-decoration: none;
+            margin-bottom: 48px;
+            transition: color 0.2s;
+            position: fixed;
+            top: 100px;
+            left: 24px;
+        }
+        .back-link:hover { color: var(--primary-cyan); }
+        .back-link::before { content: '←'; margin-right: 6px; }
+
+        .profile-shell {
+            max-width: 860px;
+            width: 100%;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            position: relative;
+        }
+
+        .profile-shell::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            background: linear-gradient(135deg,
+                rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.25),
+                transparent 50%,
+                rgba(var(--accent2-r), var(--accent2-g), var(--accent2-b), 0.15)
+            );
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .profile-title-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 14px;
+            background: linear-gradient(90deg,
+                rgba(var(--chrome-r), var(--chrome-g), var(--chrome-b), 0.88) 0%,
+                rgba(var(--chrome-r), var(--chrome-g), var(--chrome-b), 0.55) 45%,
+                rgba(0, 0, 0, 0.97) 100%
+            );
+            border-bottom: 1px solid rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.4);
+        }
+
+        .profile-title-text {
+            font-size: 0.6rem;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            color: var(--text-primary);
+            font-family: inherit;
+        }
+
+        .profile-win-btns { display: flex; gap: 6px; }
+
+        .profile-win-btn {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 1px solid rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.28);
+            background: transparent;
+            color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.5);
+            font-size: 0.45rem;
+            cursor: default;
+        }
+
+        .profile-body {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            gap: 0;
+        }
+
+        .profile-sidebar {
+            padding: 36px 28px;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            border: 1px solid rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.4);
+            background: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.05);
+            clip-path: polygon(16px 0%, 100% 0%, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0% 100%, 0% 16px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.8rem;
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+        }
+        .profile-avatar-img {
+            position: absolute; inset: 0;
+            width: 100%; height: 100%;
+            object-fit: cover; display: block; z-index: 1;
+        }
+        .avatar-pending {
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            flex-direction: column;
+            background: repeating-linear-gradient(
+                0deg, transparent, transparent 3px,
+                rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.03) 3px,
+                rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.03) 4px
+            );
+        }
+        .avatar-pending-label {
+            font-size: 0.42rem; letter-spacing: 2px; text-transform: uppercase;
+            color: rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.45);
+            text-align: center; line-height: 1.8; position: relative; z-index: 1;
+        }
+        .avatar-pending-scan {
+            position: absolute; width: 100%; height: 2px; left: 0; top: 0;
+            background: rgba(var(--accent-r),var(--accent-g),var(--accent-b),0.35);
+            animation: avatarScan 2.5s linear infinite;
+        }
+        @keyframes avatarScan { 0%{top:0} 100%{top:100%} }
+        .profile-ext-link {
+            color: var(--primary-cyan);
+            text-decoration: none;
+            font-size: 0.62rem;
+            transition: opacity 0.2s;
+            display: inline-flex; align-items: center; gap: 4px;
+        }
+        .profile-ext-link:hover { opacity: 0.65; }
+
+        .profile-status-row { display: flex; align-items: center; gap: 8px; }
+
+        .profile-status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #39ff14;
+            box-shadow: 0 0 7px #39ff14;
+            animation: dotBlink 2.4s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes dotBlink {
+            0%, 100% { opacity: 1; }
+            45%, 55%  { opacity: 0.15; }
+        }
+
+        .profile-status-label {
+            font-size: 0.54rem;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: #39ff14;
+        }
+
+        .profile-meta { list-style: none; padding: 0; margin: 0; }
+
+        .profile-meta li {
+            font-size: 0.62rem;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            line-height: 2.2;
+            border-bottom: 1px solid rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.07);
+        }
+
+        .profile-meta li:last-child { border-bottom: none; }
+        .profile-meta li span { color: var(--text-primary); font-size: 0.64rem; }
+
+        .profile-main { padding: 36px 40px; }
+
+        .profile-name {
+            font-size: clamp(1.6rem, 4vw, 2.2rem);
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--primary-cyan), var(--primary-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 4px;
+            line-height: 1.1;
+        }
+
+        .profile-role {
+            font-size: 0.7rem;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 28px;
+        }
+
+        .profile-divider {
+            width: 40px;
+            height: 1px;
+            background: linear-gradient(90deg, rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.7), transparent);
+            margin-bottom: 28px;
+        }
+
+        .profile-section-label {
+            font-size: 0.55rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.65);
+            margin-bottom: 10px;
+        }
+
+        .profile-bio {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.85;
+            margin-bottom: 32px;
+        }
+
+        .profile-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 32px; }
+
+        .profile-tag {
+            font-size: 0.55rem;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            padding: 3px 10px;
+            border: 1px solid rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.35);
+            color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.8);
+            clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+        }
+
+        .profile-log {
+            font-size: 0.64rem;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            line-height: 2.1;
+            padding: 14px 16px;
+            border: 1px solid var(--border-color);
+            background: rgba(0, 0, 0, 0.2);
+            font-family: inherit;
+        }
+
+        .profile-log .log-prompt { color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.7); }
+
+        .profile-kthread {
+            font-size: 0.52rem;
+            letter-spacing: 1.5px;
+            text-transform: lowercase;
+            color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.4);
+            border-top: 1px solid var(--border-color);
+            padding: 10px 14px;
+            text-align: right;
+        }
+
+        @media (max-width: 640px) {
+            .profile-body { grid-template-columns: 1fr; }
+            .profile-sidebar { border-right: none; border-bottom: 1px solid var(--border-color); }
+        }
+    </style>
+</head>
+<body id="top">
+    <div class="cyber-bg" aria-hidden="true">
+        <div class="cyber-gradient"></div>
+    </div>
+    <div class="grid-overlay" aria-hidden="true"><div class="grid-lines"></div><div class="grid-glow"></div></div>
+    <div class="scanlines" aria-hidden="true"></div>
+    <div class="noise-overlay" aria-hidden="true"></div>
+
+    <nav>
+        <div class="nav-container">
+            <a href="index.html" class="logo">./ControlSystems.sh</a>
+            <ul class="nav-links">
+                <li><a href="index.html#pricing">Contacts</a></li>
+                <li><a href="index.html#contact">Message us</a></li>
+                <li><a href="index.html#features">Contents</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="profile-container">
+        <a href="index.html#pricing" class="back-link">Personnel roster</a>
+
+        <div class="profile-shell">
+            <div class="profile-title-bar">
+                <span class="profile-title-text">PROC/CTRL — karageorgiev_i.dat</span>
+                <div class="profile-win-btns">
+                    <div class="profile-win-btn">×</div>
+                    <div class="profile-win-btn">−</div>
+                    <div class="profile-win-btn">□</div>
+                </div>
+            </div>
+
+            <div class="profile-body">
+                <div class="profile-sidebar">
+                    <div class="profile-avatar">
+                        <img src="karageorgiev/avatar.png" alt="Ivelin Karageorgiev" class="profile-avatar-img" onerror="this.style.display='none'">
+                        <div class="avatar-pending">
+                            <div class="avatar-pending-scan"></div>
+                            <span class="avatar-pending-label">PHOTO<br>PENDING</span>
+                        </div>
+                    </div>
+                    <div class="profile-status-row">
+                        <span class="profile-status-dot"></span>
+                        <span class="profile-status-label">available</span>
+                    </div>
+                    <ul class="profile-meta">
+                        <li>Office &nbsp;<span>№4319</span></li>
+                        <li>Hours &nbsp;<span>10:00 – 14:00</span></li>
+                        <li>Days &nbsp;<span>Mon – Fri</span></li>
+                        <li>Email &nbsp;<span style="font-size:0.56rem">i.karageorgiev@tu-plovdiv.bg</span></li>
+                        <li>GitHub &nbsp;<span><a href="https://github.com/PLACEHOLDER" target="_blank" rel="noopener noreferrer" class="profile-ext-link"><i class="ti ti-brand-github"></i> @username</a></span></li>
+                    </ul>
+                </div>
+
+                <div class="profile-main">
+                    <div class="profile-name">Ivelin Karageorgiev</div>
+                    <div class="profile-role">Engineer, Ph.D — Researcher</div>
+                    <div class="profile-divider"></div>
+
+                    <div class="profile-section-label">// research focus</div>
+                    <p class="profile-bio">
+                        Research centers on nonlinear dynamical systems and their stability under perturbation,
+                        with emphasis on Lyapunov-based methods and passivity theory. Applied domains include
+                        multi-axis motion control for precision manufacturing and energy-optimal trajectory planning
+                        for robotic manipulators.
+                    </p>
+
+                    <div class="profile-section-label">// active topics</div>
+                    <div class="profile-tags">
+                        <span class="profile-tag">Nonlinear Systems</span>
+                        <span class="profile-tag">Lyapunov Stability</span>
+                        <span class="profile-tag">Passivity Theory</span>
+                        <span class="profile-tag">Motion Control</span>
+                        <span class="profile-tag">ROS2</span>
+                        <span class="profile-tag">C++ / Python</span>
+                    </div>
+
+                    <div class="profile-section-label">// terminal log</div>
+                    <div class="profile-log">
+                        <span class="log-prompt">$</span> whoami<br>
+                        karageorgiev_i — ctrl/research thread<br>
+                        <span class="log-prompt">$</span> cat thesis.status<br>
+                        [IN PROGRESS] Passivity-Based Control for Multi-DoF Manipulators<br>
+                        <span class="log-prompt">$</span> uptime<br>
+                        active since 2020 · office hours: mon–fri 10:00–14:00<br>
+                        <span class="log-prompt">$</span> _
+                    </div>
+                </div>
+            </div>
+
+            <div class="profile-kthread">kthread/ctrl:karageorgiev_i@0x4319 · pid=2 · state=running</div>
+        </div>
+    </main>
+
+    <script src="ControlSystems.js"></script>
+    <script src="ui-enhancements.js"></script>
+</body>
+</html>
