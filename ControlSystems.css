@@ -134,11 +134,40 @@
             left: 0;
             width: 100%;
             height: 100%;
+            overflow: hidden;
             background-image:
-                linear-gradient(rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.05) 1px, transparent 1px);
+                linear-gradient(rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.030) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.030) 1px, transparent 1px);
             background-size: 50px 50px;
             animation: gridMove 33s linear infinite;
+            transition: opacity 1.2s ease;
+        }
+
+        /* Horizontal electric scan beam — rare surge, sweeps top → bottom */
+        .grid-lines::after {
+            content: '';
+            position: absolute;
+            left: -10%;
+            top: -4px;
+            width: 120%;
+            height: 2px;
+            background: linear-gradient(90deg,
+                transparent 0%,
+                rgba(0,255,255,0.012) 20%,
+                rgba(0,255,255,0.032) 50%,
+                rgba(0,255,255,0.012) 80%,
+                transparent 100%
+            );
+            filter: blur(1px);
+            animation: electricScanDown 35s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes electricScanDown {
+            0%   { top: -3px; opacity: 1; }
+            26%  { top: 100%; opacity: 0.7; }
+            27%  { top: -3px; opacity: 0; }
+            100% { top: -3px; opacity: 0; }
         }
 
         .grid-glow {
@@ -147,11 +176,41 @@
             left: 0;
             width: 100%;
             height: 100%;
+            overflow: hidden;
             background-image:
-                linear-gradient(rgba(var(--accent2-r), var(--accent2-g), var(--accent2-b), 0.03) 2px, transparent 2px),
-                linear-gradient(90deg, rgba(var(--accent2-r), var(--accent2-g), var(--accent2-b), 0.03) 2px, transparent 2px);
+                linear-gradient(rgba(var(--accent2-r), var(--accent2-g), var(--accent2-b), 0.016) 2px, transparent 2px),
+                linear-gradient(90deg, rgba(var(--accent2-r), var(--accent2-g), var(--accent2-b), 0.016) 2px, transparent 2px);
             background-size: 100px 100px;
             animation: gridMove 50s linear infinite reverse;
+            transition: opacity 1.2s ease;
+        }
+
+        /* Vertical electric scan beam — rare surge, sweeps left → right */
+        .grid-glow::after {
+            content: '';
+            position: absolute;
+            top: -10%;
+            left: -4px;
+            width: 2px;
+            height: 120%;
+            background: linear-gradient(180deg,
+                transparent 0%,
+                rgba(255,0,255,0.010) 20%,
+                rgba(255,0,255,0.026) 50%,
+                rgba(255,0,255,0.010) 80%,
+                transparent 100%
+            );
+            filter: blur(1px);
+            animation: electricScanRight 42s linear infinite;
+            animation-delay: -17s;
+            pointer-events: none;
+        }
+
+        @keyframes electricScanRight {
+            0%   { left: -3px; opacity: 1; }
+            19%  { left: 100%; opacity: 0.7; }
+            20%  { left: -3px; opacity: 0; }
+            100% { left: -3px; opacity: 0; }
         }
 
         @keyframes gridMove {
@@ -177,7 +236,7 @@
             background: var(--primary-cyan);
             border-radius: 50%;
             box-shadow: 0 0 10px var(--primary-cyan);
-            animation: float 40s infinite;
+            animation: float 50s infinite;
             opacity: 0;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
@@ -185,7 +244,7 @@
         .particle:nth-child(odd) {
             background: var(--primary-pink);
             box-shadow: 0 0 10px var(--primary-pink);
-            animation-duration: 31s;
+            animation-duration: 39s;
         }
 
         @keyframes float {
@@ -194,10 +253,10 @@
                 opacity: 0;
             }
             10% {
-                opacity: 0.8;
+                opacity: 0.64;
             }
             90% {
-                opacity: 0.8;
+                opacity: 0.64;
             }
             100% {
                 transform: translateY(-100vh) translateX(100px);
@@ -210,8 +269,8 @@
             position: fixed;
             border-radius: 50%;
             filter: blur(80px);
-            opacity: 0.4;
-            animation: orbFloat 40s ease-in-out infinite;
+            opacity: 0.32;
+            animation: orbFloat 50s ease-in-out infinite;
             pointer-events: none;
             z-index: -4;
         }
@@ -1263,13 +1322,40 @@
 
         .content-panel.active {
             display: block;
-            animation: panelEnter 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+            animation: panelEnter 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
         }
 
+        .content-panel.panel-exit {
+            display: block;
+            animation: panelExit 0.18s ease forwards;
+        }
 
         @keyframes panelEnter {
-            from { opacity: 0; transform: translateX(10px); }
+            from { opacity: 0; transform: translateX(12px); }
             to   { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes panelExit {
+            from { opacity: 1; transform: translateX(0); }
+            to   { opacity: 0; transform: translateX(-12px); }
+        }
+
+        .term-panel-body { position: relative; }
+
+        .term-sweep {
+            position: absolute;
+            left: 0; top: 0;
+            width: 100%; height: 2px;
+            background: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.55);
+            box-shadow: 0 0 8px rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.4);
+            pointer-events: none;
+            animation: termSweep 0.3s linear forwards;
+            z-index: 10;
+        }
+
+        @keyframes termSweep {
+            from { top: 0; opacity: 1; }
+            to   { top: 100%; opacity: 0; }
         }
 
         .content-panel h3 {
@@ -2496,10 +2582,10 @@
 
 .hero-logo {
     position: absolute;
-    top: -9%;
-    left: -1%;
-    width: 102%;
-    height: 118%;
+    top: -12%;
+    left: -6%;
+    width: 112%;
+    height: 124%;
     object-fit: contain;
     opacity: 0;
     pointer-events: none;
@@ -2858,6 +2944,95 @@
 @keyframes spinSlow {
     from { transform: rotate(0deg); }
     to   { transform: rotate(360deg); }
+}
+
+/* ============================================================ */
+/* RESPONSIVE — tablet + mobile layout fixes                   */
+/* ============================================================ */
+
+/* Tablet: narrow the tab column so content area gets more room */
+@media (min-width: 769px) and (max-width: 1100px) {
+    .features-container {
+        grid-template-columns: 220px 1fr;
+        gap: 24px;
+    }
+    .tab-item {
+        padding: 12px 14px;
+        font-size: 0.95rem;
+        gap: 10px;
+    }
+    .feature-content {
+        padding: 24px;
+    }
+    .features-grid2 {
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 2rem;
+    }
+}
+
+/* Mobile font & padding scale-down */
+@media (max-width: 768px) {
+    .section-title {
+        font-size: 1.9rem;
+        letter-spacing: 1px;
+    }
+    .section-subtitle {
+        font-size: 1rem;
+    }
+    .feature-content {
+        padding: 16px;
+        min-height: auto;
+    }
+    .term-panel-body {
+        min-height: 260px;
+    }
+    .features-grid2 {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    .feature-card {
+        padding: 1.8rem;
+    }
+    #grid-canvas {
+        width: 100% !important;
+        max-width: 100vw;
+    }
+    .contact-container {
+        gap: 24px;
+    }
+    .contact-form {
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .section-title {
+        font-size: 1.5rem;
+    }
+    .section-header {
+        margin-bottom: 2.5rem;
+    }
+    .tab-item {
+        padding: 10px 14px;
+        font-size: 0.88rem;
+        gap: 10px;
+    }
+    .tab-icon {
+        font-size: 1.2rem;
+    }
+    .pricing-grid {
+        gap: 1rem;
+    }
+    .pricing-card {
+        padding: 1.5rem 1.2rem;
+    }
+    .hero {
+        padding: 100px 1rem 60px;
+    }
+    .hero-stats {
+        flex-direction: column;
+        gap: 1rem;
+    }
 }
 
 /* ============================================================ */

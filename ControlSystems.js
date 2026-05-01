@@ -233,17 +233,81 @@ const observer = new IntersectionObserver((entries) => {
 }, { threshold: 0.1 });
 document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
 
-// Tabs
-const tabs = document.querySelectorAll('.tab-item');
-const panels = document.querySelectorAll('.content-panel');
-tabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-        tabs.forEach(t => t.classList.remove('active'));
-        panels.forEach(p => p.classList.remove('active'));
-        tab.classList.add('active');
-        document.getElementById(tab.getAttribute('data-tab')).classList.add('active');
+// Tabs — enhanced transition
+(function () {
+    const tabs   = document.querySelectorAll('.tab-item');
+    const panels = document.querySelectorAll('.content-panel');
+    const body   = document.querySelector('.term-panel-body');
+    const header = document.querySelector('.win-title-text');
+    const status = document.querySelector('.win-status-bar');
+
+    const TAB_META = {
+        performance: { title: 'DOMAINS.DAT',      label: 'LOADED — RESEARCH DOMAINS' },
+        security:    { title: 'PUBLICATIONS.DAT',  label: 'LOADED — PUBLICATIONS'     },
+        network:     { title: 'EVENTS.DAT',        label: 'LOADED — EVENTS'           },
+        analytics:   { title: 'HACKATHON.DAT',     label: 'LOADED — HACKATHON'        },
+        integration: { title: 'THESIS.DAT',        label: 'LOADED — THESIS TOPICS'    },
+    };
+
+    const GLITCH_STATES = ['FLUSHING…', 'READING…', 'DECRYPTING…'];
+
+    function sweepScanLine() {
+        if (!body) return;
+        const sw = document.createElement('div');
+        sw.className = 'term-sweep';
+        body.appendChild(sw);
+        setTimeout(() => sw.remove(), 320);
+    }
+
+    function glitchStatus(finalLabel) {
+        if (!status) return;
+        let i = 0;
+        const run = () => {
+            if (i < GLITCH_STATES.length) {
+                status.textContent = GLITCH_STATES[i++];
+                setTimeout(run, 80);
+            } else {
+                status.textContent = finalLabel;
+            }
+        };
+        run();
+    }
+
+    let switching = false;
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const targetId = tab.getAttribute('data-tab');
+            if (switching || tab.classList.contains('active')) return;
+            switching = true;
+
+            const activePanel = document.querySelector('.content-panel.active');
+            const meta = TAB_META[targetId] || { title: targetId.toUpperCase() + '.DAT', label: 'LOADED' };
+
+            // Exit animation on current panel
+            if (activePanel) {
+                activePanel.classList.remove('active');
+                activePanel.classList.add('panel-exit');
+                setTimeout(() => activePanel.classList.remove('panel-exit'), 180);
+            }
+
+            // Switch tabs immediately (visual)
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+
+            // After exit, bring in new panel
+            setTimeout(() => {
+                panels.forEach(p => { p.classList.remove('active'); p.classList.remove('panel-exit'); });
+                const next = document.getElementById(targetId);
+                if (next) next.classList.add('active');
+                if (header) header.textContent = meta.title;
+                sweepScanLine();
+                glitchStatus(meta.label);
+                switching = false;
+            }, 185);
+        });
     });
-});
+})();
 
 /* ==========================================================
    FORM TRANSMISSION (NETLIFY + DISCORD)

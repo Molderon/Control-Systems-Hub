@@ -6,18 +6,27 @@
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
 
+    // CSS grid elements — hidden during hex mode
+    const gridLinesEl = document.querySelector('.grid-lines');
+    const gridGlowEl  = document.querySelector('.grid-glow');
+
     let W, H, t = 0, modeT = 0, modeIdx = 0, lastTs = 0, lastDt = 0.016;
 
     /* New mode state */
     let golGrid = null, golNextGrid = null, golCols = 0, golRows = 0, golTick = 0;
-    let icLayout = null, icPkts = [];
     let sierpPt = null;
+    /* New mode state — Industry/Robots/Twins/OS/CodeHumor */
+    let cobotItems = null;
+    let osBranches = null, osStars = [];
+    let cppGraphNodes = null, cppMemGrid = null;
 
     let currentModeDuration = 40 + Math.random() * 60;  // 40–100 s for first mode
     let restDuration = 5 + Math.random() * 10;           // 5–15 s for first rest
     let restPhase    = false;   // true = canvas clear, CSS square grid visible
-    let modeHistory  = [];      // last 3 played indices — excluded from next pick
-    const FADE = 2.4;
+    // Shuffle-deck picker: each mode plays exactly once per cycle before any repeats
+    let modeDeck = [];
+    let lastPlayedIdx = -1;
+    const FADE = 1.44;
     const DIM  = 0.70;
 
     const ac  = a => `rgba(0,255,255,${a})`;
@@ -309,112 +318,196 @@
         ctx.textAlign='left';
     }
 
-    /* ══════════════════════════════════════════════════════════════════════════
-       MODE D : PID BLOCK DIAGRAM  (bottom area)
-    ══════════════════════════════════════════════════════════════════════════ */
-    function drawBlockDiagram(t) {
-        const MX=W*0.06, MY=H*0.65;
-        const totalW=W*0.88;
-        const BH=H*0.10;
-        const BY=MY+H*0.06;
-        const FBY=BY+H*0.16;
+    /* MODE D : ADAPTIVE PID + NEURAL NETWORK */
+    function drawBlockDiagram(t, modeT) {
+        // Layout
+        const loopY = H * 0.28, fbY = H * 0.44;
+        const sumX = W*0.13, sumR = 16, BH = H*0.085;
+        const pidX1=W*0.24, pidX2=W*0.52, pidMX=(pidX1+pidX2)/2;
+        const plX1 =W*0.62, plX2=W*0.83,  plMX=(plX1+plX2)/2;
+        const outX =W*0.90;
+        const nnCX = pidMX, nnY = H*0.62, nnW = pidX2-pidX1, nnH = H*0.18;
 
-        const sumX=MX+totalW*0.10, sumR=18;
-        const pidX1=MX+totalW*0.22, pidX2=MX+totalW*0.44;
-        const plX1=MX+totalW*0.54, plX2=MX+totalW*0.76;
-        const outX=MX+totalW*0.88;
-        const pidMX=(pidX1+pidX2)/2, plMX=(plX1+plX2)/2;
+        // Simulated adaptive gains
+        const Kp = 2.00 + 0.26*Math.sin(t*0.38);
+        const Ki = 0.40 + 0.11*Math.sin(t*0.55+1.1);
+        const Kd = 0.10 + 0.05*Math.sin(t*0.47+2.3);
+        const settle = Math.min(1, modeT/22);
+        const yOut = settle*(1-Math.exp(-0.38*(t%10)))*Math.sin(t*1.15+0.2)*(1-settle*0.45);
+        const eVal = -yOut*0.32, eDot = -yOut*0.12, eInt = yOut*0.18;
 
-        ctx.fillStyle='rgba(0,255,255,0.018)';
-        ctx.fillRect(MX-20, MY-10, totalW+40, H*0.38);
+        // Background
+        ctx.fillStyle='rgba(0,255,255,0.010)';
+        ctx.fillRect(W*0.04, H*0.06, W*0.92, H*0.88);
 
+        // r(t) input
         ctx.strokeStyle=ac(0.28); ctx.lineWidth=1.4;
-        ctx.beginPath(); ctx.moveTo(MX,BY); ctx.lineTo(sumX-sumR-2,BY); ctx.stroke();
-        arrowHead(sumX-sumR-2,BY,1,0,ac(0.28));
-        ctx.fillStyle=ac(0.26); ctx.font='9px "JetBrains Mono",monospace'; ctx.textAlign='center';
-        ctx.fillText('r(t)',MX+totalW*0.04,BY-8);
+        ctx.beginPath(); ctx.moveTo(W*0.04,loopY); ctx.lineTo(sumX-sumR-2,loopY); ctx.stroke();
+        arrowHead(sumX-sumR-2,loopY,1,0,ac(0.28));
+        ctx.fillStyle=ac(0.28); ctx.font='9px "JetBrains Mono",monospace'; ctx.textAlign='center';
+        ctx.fillText('r(t)',W*0.08,loopY-8);
 
-        ctx.strokeStyle=ac(0.38); ctx.lineWidth=1.5;
-        ctx.beginPath(); ctx.arc(sumX,BY,sumR,0,Math.PI*2); ctx.stroke();
-        ctx.fillStyle=ac(0.36); ctx.font='bold 13px serif';
-        ctx.textAlign='center';
-        ctx.fillText('+',sumX-6,BY+4);
-        ctx.fillStyle=ac2(0.30); ctx.fillText('\u2212',sumX+6,BY+5);
-
-        ctx.strokeStyle=ac(0.28); ctx.lineWidth=1.4;
-        ctx.beginPath(); ctx.moveTo(sumX+sumR,BY); ctx.lineTo(pidX1-2,BY); ctx.stroke();
-        arrowHead(pidX1-2,BY,1,0,ac(0.28));
-        ctx.fillStyle=ac(0.26); ctx.font='9px "JetBrains Mono",monospace'; ctx.textAlign='center';
-        ctx.fillText('e(t)',(sumX+sumR+pidX1)/2,BY-8);
-
+        // Summing junction
         ctx.strokeStyle=ac(0.40); ctx.lineWidth=1.5;
-        ctx.strokeRect(pidX1,BY-BH/2,pidX2-pidX1,BH);
-        ctx.fillStyle='rgba(0,255,255,0.035)';
-        ctx.fillRect(pidX1,BY-BH/2,pidX2-pidX1,BH);
-        ctx.fillStyle=ac(0.55); ctx.font='700 10px "JetBrains Mono",monospace'; ctx.textAlign='center';
-        ctx.fillText('PID CTRL',pidMX,BY-4);
-        ctx.fillStyle=ac(0.28); ctx.font='7px "JetBrains Mono",monospace';
-        ctx.fillText('Kp=2.0  Ki=0.4  Kd=0.1',pidMX,BY+10);
+        ctx.beginPath(); ctx.arc(sumX,loopY,sumR,0,Math.PI*2); ctx.stroke();
+        ctx.fillStyle=ac(0.38); ctx.font='bold 13px serif'; ctx.textAlign='center';
+        ctx.fillText('+',sumX-6,loopY+4);
+        ctx.fillStyle=ac2(0.32); ctx.fillText('−',sumX+6,loopY+5);
 
+        // error line
         ctx.strokeStyle=ac(0.28); ctx.lineWidth=1.4;
-        ctx.beginPath(); ctx.moveTo(pidX2,BY); ctx.lineTo(plX1-2,BY); ctx.stroke();
-        arrowHead(plX1-2,BY,1,0,ac(0.28));
+        ctx.beginPath(); ctx.moveTo(sumX+sumR,loopY); ctx.lineTo(pidX1-2,loopY); ctx.stroke();
+        arrowHead(pidX1-2,loopY,1,0,ac(0.28));
         ctx.fillStyle=ac(0.26); ctx.font='9px "JetBrains Mono",monospace'; ctx.textAlign='center';
-        ctx.fillText('u(t)',(pidX2+plX1)/2,BY-8);
+        ctx.fillText('e(t)',(sumX+sumR+pidX1)*0.5,loopY-8);
 
+        // ADAPTIVE PID block
+        ctx.strokeStyle=ac(0.42); ctx.lineWidth=1.5;
+        ctx.strokeRect(pidX1,loopY-BH/2,pidX2-pidX1,BH);
+        ctx.fillStyle='rgba(0,255,255,0.038)';
+        ctx.fillRect(pidX1,loopY-BH/2,pidX2-pidX1,BH);
+        ctx.fillStyle=ac(0.60); ctx.font='700 10px "JetBrains Mono",monospace'; ctx.textAlign='center';
+        ctx.fillText('ADAPTIVE PID',pidMX,loopY-6);
+        ctx.font='7px "JetBrains Mono",monospace';
+        ctx.fillStyle=ac(0.42);  ctx.fillText(`Kp=${Kp.toFixed(3)}`,pidMX-42,loopY+9);
+        ctx.fillStyle=amb(0.55); ctx.fillText(`Ki=${Ki.toFixed(3)}`,pidMX,    loopY+9);
+        ctx.fillStyle=ac2(0.45); ctx.fillText(`Kd=${Kd.toFixed(3)}`,pidMX+42, loopY+9);
+
+        // u(t) line
+        ctx.strokeStyle=ac(0.28); ctx.lineWidth=1.4;
+        ctx.beginPath(); ctx.moveTo(pidX2,loopY); ctx.lineTo(plX1-2,loopY); ctx.stroke();
+        arrowHead(plX1-2,loopY,1,0,ac(0.28));
+        ctx.fillStyle=ac(0.26); ctx.font='9px "JetBrains Mono",monospace'; ctx.textAlign='center';
+        ctx.fillText('u(t)',(pidX2+plX1)*0.5,loopY-8);
+
+        // Plant block
         ctx.strokeStyle=wh(0.38); ctx.lineWidth=1.5;
-        ctx.strokeRect(plX1,BY-BH/2,plX2-plX1,BH);
+        ctx.strokeRect(plX1,loopY-BH/2,plX2-plX1,BH);
         ctx.fillStyle='rgba(180,220,255,0.025)';
-        ctx.fillRect(plX1,BY-BH/2,plX2-plX1,BH);
-        ctx.fillStyle=wh(0.52); ctx.font='700 10px "JetBrains Mono",monospace'; ctx.textAlign='center';
-        ctx.fillText('PLANT',plMX,BY-4);
-        ctx.fillStyle=wh(0.26); ctx.font='7px "JetBrains Mono",monospace';
-        ctx.fillText('G(s) = 1/(s\u00b2+2s+1)',plMX,BY+10);
+        ctx.fillRect(plX1,loopY-BH/2,plX2-plX1,BH);
+        ctx.fillStyle=wh(0.55); ctx.font='700 10px "JetBrains Mono",monospace'; ctx.textAlign='center';
+        ctx.fillText('PLANT',plMX,loopY-6);
+        ctx.fillStyle=wh(0.28); ctx.font='7px "JetBrains Mono",monospace';
+        ctx.fillText('G(s)=1/(s²+2ζs+ω²)',plMX,loopY+9);
 
+        // Output
         ctx.strokeStyle=wh(0.28); ctx.lineWidth=1.4;
-        ctx.beginPath(); ctx.moveTo(plX2,BY); ctx.lineTo(outX,BY); ctx.stroke();
-        ctx.fillStyle=wh(0.52); ctx.beginPath(); ctx.arc(outX,BY,4,0,Math.PI*2); ctx.fill();
-        ctx.fillStyle=wh(0.28); ctx.font='9px "JetBrains Mono",monospace'; ctx.textAlign='left';
-        ctx.fillText('y(t)',outX+8,BY+4);
+        ctx.beginPath(); ctx.moveTo(plX2,loopY); ctx.lineTo(outX,loopY); ctx.stroke();
+        ctx.fillStyle=wh(0.55); ctx.beginPath(); ctx.arc(outX,loopY,4,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle=wh(0.30); ctx.font='9px "JetBrains Mono",monospace'; ctx.textAlign='left';
+        ctx.fillText('y(t)',outX+8,loopY+4);
 
-        ctx.strokeStyle=ac2(0.28); ctx.lineWidth=1.4;
-        ctx.setLineDash([4,8]);
+        // Feedback loop
+        ctx.strokeStyle=ac2(0.28); ctx.lineWidth=1.4; ctx.setLineDash([4,8]);
         ctx.beginPath();
-        ctx.moveTo(outX,BY); ctx.lineTo(outX,FBY);
-        ctx.lineTo(sumX,FBY);
-        ctx.lineTo(sumX,BY+sumR+2);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        arrowHead(sumX,BY+sumR+2,0,1,ac2(0.28));
-        ctx.fillStyle=ac2(0.24); ctx.font='8px "JetBrains Mono",monospace'; ctx.textAlign='center';
-        ctx.fillText('feedback',(outX+sumX)/2,FBY+12);
+        ctx.moveTo(outX,loopY); ctx.lineTo(outX,fbY);
+        ctx.lineTo(sumX,fbY);   ctx.lineTo(sumX,loopY+sumR+2);
+        ctx.stroke(); ctx.setLineDash([]);
+        arrowHead(sumX,loopY+sumR+2,0,1,ac2(0.28));
+        ctx.fillStyle=ac2(0.22); ctx.font='8px "JetBrains Mono",monospace'; ctx.textAlign='center';
+        ctx.fillText('feedback',(outX+sumX)*0.5,fbY+12);
 
-        const LOOP_PTS = [
-            [MX,BY],[sumX-sumR,BY],
-            [sumX+sumR,BY],[pidX1,BY],
-            [pidX2,BY],[plX1,BY],
-            [plX2,BY],[outX,BY],
-            [outX,FBY],[sumX,FBY],[sumX,BY+sumR],
-        ];
-        const totalSegs = LOOP_PTS.length-1;
+        // Signal dots on loop
+        const LP=[[W*0.04,loopY],[sumX-sumR,loopY],[sumX+sumR,loopY],[pidX1,loopY],
+                  [pidX2,loopY],[plX1,loopY],[plX2,loopY],[outX,loopY],
+                  [outX,fbY],[sumX,fbY],[sumX,loopY+sumR]];
+        const nSeg=LP.length-1;
         for(let d=0;d<3;d++){
-            const phase=(t*0.45+d/3)%1;
-            const rawSeg=phase*totalSegs;
-            const segIdx=Math.floor(rawSeg);
-            const segFrac=rawSeg-segIdx;
-            if(segIdx>=totalSegs) continue;
-            const [ax,ay]=LOOP_PTS[segIdx];
-            const [bx,by]=LOOP_PTS[segIdx+1];
-            const dotX=lerp(ax,bx,segFrac), dotY=lerp(ay,by,segFrac);
-            const dotColor=segIdx>=8?ac2(0.65):segIdx>=6?wh(0.70):ac(0.70);
-            ctx.fillStyle=dotColor;
-            ctx.beginPath(); ctx.arc(dotX,dotY,3.5,0,Math.PI*2); ctx.fill();
+            const ph=(t*0.45+d/3)%1, rs=ph*nSeg, si=Math.floor(rs);
+            if(si>=nSeg) continue;
+            const sf=rs-si, [ax,ay]=LP[si], [bx,by]=LP[si+1];
+            ctx.fillStyle=si>=8?ac2(0.65):si>=6?wh(0.70):ac(0.70);
+            ctx.beginPath(); ctx.arc(lerp(ax,bx,sf),lerp(ay,by,sf),3.5,0,Math.PI*2); ctx.fill();
         }
 
-        const yOut=0.8*(1-Math.exp(-0.5*(t%8)))*Math.sin(t*1.2+0.3);
-        ctx.fillStyle=wh(0.40); ctx.font='700 8px "JetBrains Mono",monospace'; ctx.textAlign='right';
-        ctx.fillText(`y(t) = ${yOut>=0?'+':''}${yOut.toFixed(4)}`,W-48,MY-10);
-        ctx.fillStyle=ac(0.30); ctx.fillText(`e(t) = ${(-yOut*0.3).toFixed(4)}`,W-48,MY+2);
+        // NEURAL NETWORK ADAPTIVE BLOCK (below PID)
+        ctx.fillStyle='rgba(255,0,255,0.035)';
+        roundRect(ctx,nnCX-nnW/2,nnY-nnH/2,nnW,nnH,5); ctx.fill();
+        ctx.strokeStyle=ac2(0.38); ctx.lineWidth=1.5;
+        roundRect(ctx,nnCX-nnW/2,nnY-nnH/2,nnW,nnH,5); ctx.stroke();
+        ctx.fillStyle=ac2(0.58); ctx.font='700 9px "JetBrains Mono",monospace'; ctx.textAlign='center';
+        ctx.fillText('NEURAL ADAPT',nnCX,nnY-nnH/2+13);
+
+        const iX=nnCX-nnW/2+18, hX=nnCX, oX=nnCX+nnW/2-18;
+        const iYs=[nnY-nnH*0.28, nnY, nnY+nnH*0.28];
+        const hYs=[nnY-nnH*0.32, nnY-nnH*0.10, nnY+nnH*0.10, nnY+nnH*0.32];
+        const oYs=[nnY-nnH*0.22, nnY, nnY+nnH*0.22];
+        const iLbls=['e(t)','ė(t)','∫e']; const oLbls=['ΔKp','ΔKi','ΔKd'];
+        const iVals=[eVal, eDot, eInt];
+        const bpFlash = Math.sin(t*Math.PI/5) > 0.75;
+
+        iYs.forEach((iy,ii) => hYs.forEach((hy,hi) => {
+            const w=Math.sin(t*0.14+ii*1.3+hi*0.9)*0.4+0.5;
+            ctx.strokeStyle=ac2(bpFlash?0.30:0.06+w*0.09); ctx.lineWidth=0.8;
+            ctx.beginPath(); ctx.moveTo(iX+5,iy); ctx.lineTo(hX-5,hy); ctx.stroke();
+        }));
+        hYs.forEach((hy,hi) => oYs.forEach((oy,oi) => {
+            const w=Math.sin(t*0.17+hi*0.8+oi*1.4)*0.4+0.5;
+            ctx.strokeStyle=ac2(bpFlash?0.32:0.07+w*0.11); ctx.lineWidth=0.8;
+            ctx.beginPath(); ctx.moveTo(hX+5,hy); ctx.lineTo(oX-5,oy); ctx.stroke();
+        }));
+
+        iYs.forEach((iy,i)=>{
+            const act=Math.min(1,Math.abs(iVals[i])/0.4);
+            ctx.fillStyle=ac(0.18+act*0.38);
+            ctx.beginPath(); ctx.arc(iX,iy,5,0,Math.PI*2); ctx.fill();
+            ctx.strokeStyle=ac(0.50); ctx.lineWidth=1; ctx.stroke();
+            ctx.fillStyle=ac(0.38); ctx.font='6px "JetBrains Mono",monospace'; ctx.textAlign='right';
+            ctx.fillText(iLbls[i],iX-7,iy+2);
+        });
+        hYs.forEach((hy,i)=>{
+            const act=(Math.sin(t*0.28+i*1.1)+1)*0.5;
+            ctx.fillStyle=ac2(0.10+act*0.26);
+            ctx.beginPath(); ctx.arc(hX,hy,5,0,Math.PI*2); ctx.fill();
+            ctx.strokeStyle=ac2(bpFlash?0.62:0.30); ctx.lineWidth=1; ctx.stroke();
+        });
+        const deltas=[Kp-2.0, Ki-0.4, Kd-0.10];
+        oYs.forEach((oy,i)=>{
+            const act=Math.min(1,Math.abs(deltas[i])*5);
+            ctx.fillStyle=amb(0.18+act*0.38);
+            ctx.beginPath(); ctx.arc(oX,oy,5,0,Math.PI*2); ctx.fill();
+            ctx.strokeStyle=amb(0.55); ctx.lineWidth=1; ctx.stroke();
+            ctx.fillStyle=amb(0.48); ctx.font='6px "JetBrains Mono",monospace'; ctx.textAlign='left';
+            ctx.fillText(oLbls[i],oX+7,oy+2);
+        });
+
+        ctx.strokeStyle=amb(0.22); ctx.lineWidth=1; ctx.setLineDash([2,5]);
+        [[0,pidMX-42,loopY+BH/2],[1,pidMX,loopY+BH/2],[2,pidMX+42,loopY+BH/2]].forEach(([i,gx,gy])=>{
+            ctx.beginPath(); ctx.moveTo(oX,oYs[i]); ctx.lineTo(gx,gy); ctx.stroke();
+        });
+        ctx.strokeStyle=ac(0.15); ctx.setLineDash([2,4]);
+        ctx.beginPath(); ctx.moveTo(sumX+sumR,loopY); ctx.lineTo(sumX+sumR,nnY);
+        ctx.lineTo(nnCX-nnW/2,nnY); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle=amb(0.24); ctx.font='7px "JetBrains Mono",monospace'; ctx.textAlign='center';
+        ctx.fillText('gain adaptation',nnCX,nnY-nnH/2-7);
+        if(bpFlash){
+            ctx.fillStyle=ac2(0.48); ctx.font='700 7px "JetBrains Mono",monospace';
+            ctx.fillText('▶ BACKPROP',nnCX,nnY+nnH/2+13);
+        }
+
+        // Oscilloscope (right side)
+        const scX=W*0.62, scY=H*0.52, scW=W*0.29, scH=H*0.24;
+        ctx.fillStyle='rgba(0,255,255,0.022)'; ctx.fillRect(scX,scY,scW,scH);
+        ctx.strokeStyle=ac(0.18); ctx.lineWidth=1; ctx.strokeRect(scX,scY,scW,scH);
+        ctx.fillStyle=ac(0.22); ctx.font='700 7px "JetBrains Mono",monospace'; ctx.textAlign='left';
+        ctx.fillText('RESPONSE  y(t)',scX+6,scY+11);
+        const smid=scY+scH*0.5;
+        ctx.strokeStyle=ac(0.10); ctx.lineWidth=0.8;
+        ctx.beginPath(); ctx.moveTo(scX+4,smid); ctx.lineTo(scX+scW-4,smid); ctx.stroke();
+        ctx.strokeStyle=grn(0.55); ctx.lineWidth=1.5;
+        ctx.beginPath();
+        for(let xi=0;xi<=scW-10;xi+=2){
+            const ts=(xi/(scW-10))*12;
+            const env=Math.exp(-0.32*ts)*(1-settle*0.68);
+            const y=smid-((1-env)+env*Math.sin(ts*1.2)*0.8-0.5)*scH*0.48;
+            xi===0?ctx.moveTo(scX+5+xi,y):ctx.lineTo(scX+5+xi,y);
+        }
+        ctx.stroke();
+        ctx.fillStyle=grn(0.30); ctx.font='6px "JetBrains Mono",monospace'; ctx.textAlign='right';
+        ctx.fillText(`settle=${(settle*100).toFixed(0)}%`,scX+scW-6,scY+scH-6);
+        ctx.fillStyle=wh(0.28); ctx.textAlign='right';
+        ctx.fillText(`y=${yOut.toFixed(3)}  e=${eVal.toFixed(3)}`,W-36,H*0.88);
     }
 
     /* ══════════════════════════════════════════════════════════════════════════
@@ -927,7 +1020,7 @@
                 const dx = cx - W * 0.5, dy = cy - H * 0.5;
                 const dist = Math.sqrt(dx*dx + dy*dy) / (Math.sqrt(W*W + H*H) * 0.5);
                 const pulse = Math.sin(dist * 7 - t * 1.1) * 0.5 + 0.5;
-                ctx.strokeStyle = ac(0.04 + pulse * 0.11);
+                ctx.strokeStyle = ac(0.028 + pulse * 0.077);
                 ctx.beginPath();
                 for (let i = 0; i < 6; i++) {
                     const a = Math.PI / 6 + (Math.PI / 3) * i;
@@ -948,7 +1041,7 @@
             const col = Math.round((hcx + drift) / HW), row = Math.round(hcy / (HH * 0.75));
             const scx = col * HW + (row % 2 === 0 ? 0 : HW / 2) - drift;
             const scy = row * HH * 0.75;
-            ctx.strokeStyle = ac(0.55);
+            ctx.strokeStyle = ac(0.36);
             ctx.lineWidth = 1;
             ctx.beginPath();
             for (let j = 0; j < 6; j++) {
@@ -959,7 +1052,7 @@
             ctx.closePath();
             ctx.stroke();
             const g = ctx.createRadialGradient(scx, scy, 0, scx, scy, S);
-            g.addColorStop(0, ac(0.07)); g.addColorStop(1, ac(0));
+            g.addColorStop(0, ac(0.05)); g.addColorStop(1, ac(0));
             ctx.fillStyle = g; ctx.fill();
         }
         ctx.lineWidth = 1;
@@ -1054,14 +1147,15 @@
         const cx2 = x => PX + (x - xMin) / (xMax - xMin) * PW;
         const cy2 = y => baseline - (y / PDF_MAX) * PH * 0.84;
 
-        // Sigma bands (68 / 95 / 99.7 rule) — very gentle green fills
+        // Sigma bands — website palette: outer purple, mid magenta, inner cyan
+        const pur = a => `rgba(124,58,237,${a})`;
         const BANDS = [
-            { s: 3, alpha: 0.045, pct: '99.7%' },
-            { s: 2, alpha: 0.085, pct: '95.4%' },
-            { s: 1, alpha: 0.14,  pct: '68.3%' },
+            { s: 3, fill: pur, alpha: 0.030, pct: '99.7%' },
+            { s: 2, fill: ac2, alpha: 0.040, pct: '95.4%' },
+            { s: 1, fill: ac,  alpha: 0.055, pct: '68.3%' },
         ];
-        BANDS.forEach(({ s, alpha }) => {
-            ctx.fillStyle = grn(alpha);
+        BANDS.forEach(({ s, fill, alpha }) => {
+            ctx.fillStyle = fill(alpha);
             ctx.beginPath();
             ctx.moveTo(cx2(-s), cy2(0));
             for (let xi = -s; xi <= s; xi += 0.04) ctx.lineTo(cx2(xi), cy2(pdf(xi)));
@@ -1069,16 +1163,16 @@
             ctx.closePath(); ctx.fill();
         });
 
-        // Ghost white area fill under curve
-        ctx.fillStyle = wh(0.035);
+        // Ghost area fill under full curve
+        ctx.fillStyle = wh(0.022);
         ctx.beginPath();
         ctx.moveTo(cx2(xMin), cy2(0));
         for (let xi = xMin; xi <= xMax; xi += 0.05) ctx.lineTo(cx2(xi), cy2(pdf(xi)));
         ctx.lineTo(cx2(xMax), cy2(0));
         ctx.closePath(); ctx.fill();
 
-        // Bell curve — soft outer glow + crisp line
-        [{ lw: 4, col: wh(0.07) }, { lw: 1.4, col: wh(0.70) }].forEach(({ lw, col }) => {
+        // Bell curve — outer glow in cyan, crisp line in cyan
+        [{ lw: 5, col: ac(0.045) }, { lw: 1.4, col: ac(0.55) }].forEach(({ lw, col }) => {
             ctx.strokeStyle = col; ctx.lineWidth = lw;
             ctx.beginPath();
             for (let xi = xMin; xi <= xMax; xi += 0.04) {
@@ -1089,29 +1183,29 @@
         });
 
         // X-axis
-        ctx.strokeStyle = wh(0.20); ctx.lineWidth = 1;
+        ctx.strokeStyle = wh(0.18); ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(PX - 8, baseline); ctx.lineTo(PX + PW + 8, baseline); ctx.stroke();
 
         // Tick marks and axis labels
         ctx.font = '9px "JetBrains Mono",monospace'; ctx.textAlign = 'center';
         [-3,-2,-1,0,1,2,3].forEach(xi => {
             const tx = cx2(xi);
-            ctx.strokeStyle = wh(0.14); ctx.lineWidth = 0.8;
+            ctx.strokeStyle = wh(0.12); ctx.lineWidth = 0.8;
             ctx.beginPath(); ctx.moveTo(tx, baseline); ctx.lineTo(tx, baseline + 5); ctx.stroke();
-            ctx.fillStyle = wh(0.32);
+            ctx.fillStyle = wh(0.28);
             ctx.fillText(xi === 0 ? '\u03bc' : `${xi > 0 ? '+' : ''}${xi}\u03c3`, tx, baseline + 17);
         });
 
-        // Sigma boundary dashes + percentage labels
+        // Sigma boundary dashes + percentage labels — magenta dashes, cyan labels
         BANDS.forEach(({ s, pct }) => {
-            ctx.strokeStyle = grn(0.20); ctx.lineWidth = 0.7; ctx.setLineDash([3, 7]);
+            ctx.strokeStyle = ac2(0.18); ctx.lineWidth = 0.7; ctx.setLineDash([3, 7]);
             [-s, s].forEach(xi => {
                 ctx.beginPath();
                 ctx.moveTo(cx2(xi), baseline - 2); ctx.lineTo(cx2(xi), cy2(pdf(xi)) - 5);
                 ctx.stroke();
             });
             ctx.setLineDash([]);
-            ctx.fillStyle = grn(0.50); ctx.font = '8px "JetBrains Mono",monospace';
+            ctx.fillStyle = ac(0.50); ctx.font = '8px "JetBrains Mono",monospace';
             ctx.textAlign = 'left';
             ctx.fillText(pct, cx2(s) + 5, cy2(pdf(s)) - 8);
         });
@@ -1121,23 +1215,24 @@
         const dotXi = xMin + phase * (xMax - xMin);
         const dotX2 = cx2(dotXi), dotY2 = cy2(pdf(dotXi));
         const gDot = ctx.createRadialGradient(dotX2, dotY2, 0, dotX2, dotY2, 9);
-        gDot.addColorStop(0, wh(0.85)); gDot.addColorStop(1, wh(0));
+        gDot.addColorStop(0, ac(0.85)); gDot.addColorStop(1, ac(0));
         ctx.fillStyle = gDot;
         ctx.beginPath(); ctx.arc(dotX2, dotY2, 9, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = wh(0.80);
+        ctx.fillStyle = ac(0.80);
         ctx.beginPath(); ctx.arc(dotX2, dotY2, 2.5, 0, Math.PI * 2); ctx.fill();
 
         // Terminal info panel
         const iX = W - 220, iY = 60;
         drawTerminalPanel(iX, iY, 196, 92, 'GAUSSIAN-DIST');
-        ctx.font = '9px "JetBrains Mono",monospace'; ctx.fillStyle = wh(0.45); ctx.textAlign = 'left';
+        ctx.font = '9px "JetBrains Mono",monospace'; ctx.fillStyle = ac(0.40); ctx.textAlign = 'left';
         ctx.fillText('X ~ N(\u03bc, \u03c3\u00b2)', iX + 10, iY + 36);
         ctx.fillText('f(x)=e^(-x\u00b2/2)/\u221a2\u03c0', iX + 10, iY + 50);
+        ctx.fillStyle = wh(0.35);
         ctx.fillText('\u03bc=0   \u03c3=1', iX + 10, iY + 64);
         ctx.fillText('E[X]=0   Var[X]=1', iX + 10, iY + 78);
         ctx.lineWidth = 1;
 
-        ctx.fillStyle = wh(0.16); ctx.font = '7px "JetBrains Mono",monospace'; ctx.textAlign = 'left';
+        ctx.fillStyle = ac2(0.18); ctx.font = '7px "JetBrains Mono",monospace'; ctx.textAlign = 'left';
         ctx.fillText('// STANDARD NORMAL DISTRIBUTION', PX, baseline + 34);
     }
 
@@ -1231,117 +1326,613 @@
         ctx.lineWidth = 1;
     }
 
+
+
     /* ══════════════════════════════════════════════════════════════════════════
-       MODE 15 — INTEGRATED CIRCUIT TRACES
+       MODE 17 — COLLABORATIVE ROBOTS  (green safety, amber items, cyan arms)
     ══════════════════════════════════════════════════════════════════════════ */
-    function initICLayout() {
-        const hTraceCount = 9, vTraceCount = 14;
-        const traces = [], pads = [], chips = [], vias = [];
+    function drawCollabRobots(t, modeT) {
+        // Professional UR5-style cobot: 4-segment arm, workspace zones, path preview
+        const baseX = W*0.50, baseY = H*0.68;
+        const L=[88,72,52,28]; // segment lengths
 
-        for (let i = 0; i < hTraceCount; i++) {
-            const y = (i + 0.6) / hTraceCount * H;
-            traces.push({ x0: 0, y0: y, x1: W, y1: y, horiz: true });
+        // Smooth pick-place cycle using keyframe angles (radians)
+        // Home → Pick → Inspect → Place → Home
+        const CYCLE=12, ct2=(t*1.0)%CYCLE;
+        const KF=[
+            {t:0,  a:[-0.48,-1.05, 0.70, 0.40]},  // Home
+            {t:2.5,a:[-1.10,-0.62, 0.85, 0.22]},  // Pick (left)
+            {t:4.0,a:[-1.10,-0.62, 0.85, 0.22]},  // Hold
+            {t:5.5,a:[-0.55,-0.95, 0.40, 0.60]},  // Inspect (raised)
+            {t:7.5,a:[ 0.55,-0.82, 0.62, 0.30]},  // Place (right)
+            {t:9.0,a:[ 0.55,-0.82, 0.62, 0.30]},  // Hold
+            {t:10.5,a:[-0.48,-1.05, 0.70, 0.40]}, // Home
+            {t:12, a:[-0.48,-1.05, 0.70, 0.40]},
+        ];
+        // Find surrounding keyframes
+        let kA=KF[0],kB=KF[1];
+        for(let i=0;i<KF.length-1;i++){
+            if(ct2>=KF[i].t&&ct2<KF[i+1].t){kA=KF[i];kB=KF[i+1];break;}
         }
-        for (let i = 0; i < vTraceCount; i++) {
-            const x = (i + 0.6) / vTraceCount * W;
-            traces.push({ x0: x, y0: 0, x1: x, y1: H, horiz: false });
-        }
+        const blend=kA.t===kB.t?0:eio((ct2-kA.t)/(kB.t-kA.t));
+        const angs=kA.a.map((a,i)=>lerp(a,kB.a[i],blend));
 
-        const hT = traces.filter(t => t.horiz), vT = traces.filter(t => !t.horiz);
-        for (const h of hT) {
-            for (const v of vT) {
-                if (Math.random() < 0.22) pads.push({ x: v.x0, y: h.y0 });
+        // Forward kinematics — compute joint positions
+        const joints=[{x:baseX,y:baseY}];
+        let cumAng=0;
+        angs.forEach((a,i)=>{
+            cumAng+=a;
+            const prev=joints[joints.length-1];
+            joints.push({x:prev.x+Math.cos(cumAng)*L[i], y:prev.y+Math.sin(cumAng)*L[i]});
+        });
+        const tip=joints[joints.length-1];
+
+        // Determine operation state
+        const isHolding=(ct2>=3.5&&ct2<4.5)||(ct2>=8.5&&ct2<9.5);
+        const atPick=ct2>=2.2&&ct2<5;
+        const atPlace=ct2>=7.2&&ct2<10;
+
+        // Workspace zone arcs (from base)
+        const zones=[
+            {r:H*0.55, col:ac2, label:'RESTRICTED'},
+            {r:H*0.42, col:amb, label:'CAUTION'},
+            {r:H*0.28, col:grn, label:'SAFE'},
+        ];
+        zones.forEach(z=>{
+            ctx.strokeStyle=z.col(0.12); ctx.lineWidth=1;
+            ctx.setLineDash([4,8]);
+            ctx.beginPath(); ctx.arc(baseX,baseY,z.r,Math.PI,Math.PI*2); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle=z.col(0.15); ctx.font='6px "JetBrains Mono",monospace';
+            ctx.textAlign='left';
+            ctx.fillText(z.label,baseX-z.r+4,baseY-z.r*0.08);
+        });
+
+        // Reach envelope arc
+        const reach=L.reduce((s,v)=>s+v,0);
+        ctx.strokeStyle=ac(0.08); ctx.lineWidth=1; ctx.setLineDash([2,6]);
+        ctx.beginPath(); ctx.arc(baseX,baseY,reach,Math.PI,Math.PI*2); ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Path preview (dotted arc for planned trajectory)
+        ctx.strokeStyle=ac(0.18); ctx.lineWidth=1; ctx.setLineDash([3,5]);
+        ctx.beginPath();
+        for(let i=0;i<=40;i++){
+            const st2=(i/40)*CYCLE, cf2=st2%CYCLE;
+            let ka2=KF[0],kb2=KF[1];
+            for(let j=0;j<KF.length-1;j++){if(cf2>=KF[j].t&&cf2<KF[j+1].t){ka2=KF[j];kb2=KF[j+1];break;}}
+            const bl2=ka2.t===kb2.t?0:eio((cf2-ka2.t)/(kb2.t-ka2.t));
+            const ag2=ka2.a.map((a,idx)=>lerp(a,kb2.a[idx],bl2));
+            let cx2=baseX,cy2=baseY,ca2=0;
+            ag2.forEach((a,idx)=>{ca2+=a;cx2+=Math.cos(ca2)*L[idx];cy2+=Math.sin(ca2)*L[idx];});
+            i===0?ctx.moveTo(cx2,cy2):ctx.lineTo(cx2,cy2);
+        }
+        ctx.stroke(); ctx.setLineDash([]);
+
+        // Draw arm segments
+        joints.slice(0,-1).forEach((_,i)=>{
+            const j1=joints[i], j2=joints[i+1];
+            const thick=[5,4,3,2.5][i];
+            ctx.strokeStyle=ac(0.65-(i*0.08)); ctx.lineWidth=thick;
+            ctx.beginPath(); ctx.moveTo(j1.x,j1.y); ctx.lineTo(j2.x,j2.y); ctx.stroke();
+        });
+
+        // Joint circles with angle labels
+        joints.slice(0,-1).forEach((j,i)=>{
+            ctx.fillStyle=i===0?ac(0.35):ac(0.22);
+            ctx.beginPath(); ctx.arc(j.x,j.y,[9,7,6,5][i],0,Math.PI*2); ctx.fill();
+            ctx.strokeStyle=ac(0.55); ctx.lineWidth=1.2; ctx.stroke();
+            // Joint angle arc indicator
+            const ang=angs[i];
+            ctx.strokeStyle=ac(0.25); ctx.lineWidth=1; ctx.beginPath();
+            ctx.arc(j.x,j.y,[14,12,10,8][i], -Math.PI/2, -Math.PI/2+ang); ctx.stroke();
+            // Angle label
+            if(i<3){
+                ctx.fillStyle=ac(0.28); ctx.font='6px "JetBrains Mono",monospace'; ctx.textAlign='center';
+                ctx.fillText(`J${i+1}:${(ang*180/Math.PI).toFixed(0)}°`,j.x,j.y-[16,14,12][i]);
             }
+        });
+
+        // Base mount
+        ctx.fillStyle=ac(0.25); ctx.fillRect(baseX-18,baseY,36,10);
+        ctx.strokeStyle=ac(0.50); ctx.lineWidth=1.5; ctx.strokeRect(baseX-18,baseY,36,10);
+        ctx.fillStyle=ac(0.12); ctx.fillRect(baseX-28,baseY+10,56,6);
+
+        // End effector / gripper
+        const gripOpen=!isHolding;
+        const gAng=Math.atan2(joints[3].y-joints[4].y, joints[3].x-joints[4].x)+Math.PI;
+        const gPerp2=gAng+Math.PI/2;
+        const gOpen=gripOpen?10:4;
+        ctx.strokeStyle=ac(0.72); ctx.lineWidth=2;
+        [-1,1].forEach(side=>{
+            const px2=tip.x+Math.cos(gPerp2)*gOpen*side, py2=tip.y+Math.sin(gPerp2)*gOpen*side;
+            ctx.beginPath(); ctx.moveTo(px2,py2);
+            ctx.lineTo(px2+Math.cos(gAng)*14,py2+Math.sin(gAng)*14); ctx.stroke();
+        });
+
+        // Workpiece indicators (pick/place fixtures)
+        const fixtures=[
+            {x:baseX-W*0.24, y:baseY-10, label:'PICK'},
+            {x:baseX+W*0.24, y:baseY-10, label:'PLACE'},
+        ];
+        fixtures.forEach(fx=>{
+            const isActive=(fx.label==='PICK'&&atPick)||(fx.label==='PLACE'&&atPlace);
+            ctx.strokeStyle=isActive?grn(0.60):wh(0.20); ctx.lineWidth=1.5;
+            ctx.beginPath(); roundRect(ctx,fx.x-16,fx.y-8,32,16,3); ctx.stroke();
+            ctx.fillStyle=isActive?grn(0.15):wh(0.04);
+            roundRect(ctx,fx.x-16,fx.y-8,32,16,3); ctx.fill();
+            ctx.fillStyle=isActive?grn(0.65):wh(0.28);
+            ctx.font='700 7px "JetBrains Mono",monospace'; ctx.textAlign='center';
+            ctx.fillText(fx.label,fx.x,fx.y+4);
+        });
+
+        // Force/torque readout at tip
+        const Ftip=12+Math.sin(t*2.3)*3;
+        ctx.strokeStyle=ac(isHolding?0.55:0.20); ctx.lineWidth=1;
+        ctx.beginPath(); ctx.arc(tip.x,tip.y,8,0,Math.PI*2); ctx.stroke();
+        if(isHolding){
+            ctx.fillStyle=grn(0.50); ctx.font='6px "JetBrains Mono",monospace'; ctx.textAlign='left';
+            ctx.fillText(`${Ftip.toFixed(1)}N`,tip.x+11,tip.y+3);
         }
 
-        const chipCount = 4 + Math.floor(Math.random() * 3);
-        for (let i = 0; i < chipCount; i++) {
-            const cw = 70 + Math.random() * 90, ch = 55 + Math.random() * 55;
-            chips.push({
-                x: 30 + Math.random() * (W - cw - 60),
-                y: 30 + Math.random() * (H - ch - 60),
-                w: cw, h: ch,
-                id: ['U' + (i+1), 'IC' + (i*7+3), 'MCU-'+i, 'FPGA'][i % 4],
-            });
-        }
+        // Coordinate frame at base
+        ctx.strokeStyle=ac(0.30); ctx.lineWidth=1;
+        ctx.beginPath(); ctx.moveTo(baseX,baseY); ctx.lineTo(baseX+22,baseY); ctx.stroke();
+        arrowHead(baseX+22,baseY,1,0,ac(0.30));
+        ctx.strokeStyle=grn(0.30);
+        ctx.beginPath(); ctx.moveTo(baseX,baseY); ctx.lineTo(baseX,baseY-22); ctx.stroke();
+        arrowHead(baseX,baseY-22,0,-1,grn(0.30));
+        ctx.fillStyle=ac(0.25); ctx.font='6px "JetBrains Mono",monospace'; ctx.textAlign='left';
+        ctx.fillText('X',baseX+24,baseY+4);
+        ctx.fillStyle=grn(0.25); ctx.fillText('Y',baseX+4,baseY-24);
 
-        for (let i = 0; i < 35; i++) {
-            vias.push({ x: Math.random() * W, y: Math.random() * H });
-        }
-
-        icLayout = { traces, pads, chips, vias };
-        icPkts = [];
+        // Terminal panel
+        const PW=Math.min(258,W*0.22), PH=118, PX2=38, PY2=H-PH-48;
+        const HDR=drawTerminalPanel(PX2,PY2,PW,PH,'UR5 // COBOT STATUS');
+        const op=atPick?'PICKING':atPlace?'PLACING':isHolding?'HOLDING':'TRANSIT';
+        drawLogLines([
+            {at:0.0,k:'cmd',s:'> PROGRAM: pick_place.urp'},
+            {at:0.5,k:'ok', s:`OP: ${op}`},
+            {at:1.0,k:'hi', s:`TCP: (${(tip.x-baseX).toFixed(0)},${(baseY-tip.y).toFixed(0)})mm`},
+            {at:1.5,k:'dim',s:`J1:${(angs[0]*57.3).toFixed(1)} J2:${(angs[1]*57.3).toFixed(1)}`},
+            {at:2.0,k:'dim',s:`J3:${(angs[2]*57.3).toFixed(1)} J4:${(angs[3]*57.3).toFixed(1)}`},
+            {at:2.5,k:'ok', s:`F=${Ftip.toFixed(1)}N  SAFETY: OK`},
+        ],modeT,PX2,PY2,PW,PH,HDR);
     }
 
-    function drawICTraces(t, modeT) {
-        if (!icLayout) initICLayout();
 
-        // Traces
-        ctx.strokeStyle = ac(0.15);
-        ctx.lineWidth = 1.4;
-        for (const tr of icLayout.traces) {
-            ctx.beginPath();
-            tr.horiz ? (ctx.moveTo(tr.x0, tr.y0), ctx.lineTo(tr.x1, tr.y0))
-                     : (ctx.moveTo(tr.x0, tr.y0), ctx.lineTo(tr.x0, tr.y1));
-            ctx.stroke();
+/* ══════════════════════════════════════════════════════════════════════════
+       MODE 20 — CODE HUMOR  (6 sub-scenes, 72 s cycle)
+       Scene 0 — C++ topo deadlock  (15 s, pink/cyan threads)
+       Scene 1 — C++ heap leak      (10 s, amber→red cells)
+       Scene 2 — Python indentation (12 s, cyan lines + green snake)
+       Scene 3 — Rust borrow check  (14 s, amber BC, cyan vs pink)
+       Scene 4 — Ruby magic         (12 s, pink sparkles)
+       Scene 5 — Lua tables         (9 s, green TABLE morph)
+    ══════════════════════════════════════════════════════════════════════════ */
+    function drawCodeHumor(t, modeT) {
+        const SDUR = [15, 10, 12, 14, 12, 9];
+        const CYCLE = SDUR.reduce((a,b) => a+b, 0); // 72 s
+        const ct = modeT % CYCLE;
+        let scene = 0, sceneT = ct, cum = 0;
+        for (let i = 0; i < SDUR.length; i++) {
+            if (ct < cum + SDUR[i]) { scene = i; sceneT = ct - cum; break; }
+            cum += SDUR[i];
         }
 
-        // Pads
-        ctx.fillStyle = ac(0.32);
-        for (const p of icLayout.pads) ctx.fillRect(p.x - 4, p.y - 4, 8, 8);
-
-        // Chip outlines
-        ctx.lineWidth = 1;
-        for (const chip of icLayout.chips) {
-            ctx.strokeStyle = ac(0.38);
-            ctx.strokeRect(chip.x, chip.y, chip.w, chip.h);
-            const pinCount = Math.round(chip.w / 18);
-            for (let i = 1; i <= pinCount; i++) {
-                const px = chip.x + i / (pinCount + 1) * chip.w;
-                ctx.beginPath(); ctx.moveTo(px, chip.y); ctx.lineTo(px, chip.y - 8); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(px, chip.y + chip.h); ctx.lineTo(px, chip.y + chip.h + 8); ctx.stroke();
+        // ── Scene 0: C++ Topo + Threads ──────────────────────────────────────
+        if (scene === 0) {
+            if (!cppGraphNodes) {
+                const cx = W * 0.50, cy = H * 0.40;
+                cppGraphNodes = [
+                    {id:'A', x:cx-150, y:cy-100},
+                    {id:'B', x:cx+150, y:cy-100},
+                    {id:'C', x:cx-90,  y:cy},
+                    {id:'D', x:cx,     y:cy},        // contested
+                    {id:'E', x:cx+90,  y:cy},
+                    {id:'F', x:cx,     y:cy+100},
+                ];
             }
-            // Chip fill + label
-            ctx.fillStyle = 'rgba(0,12,10,0.25)';
-            ctx.fillRect(chip.x + 1, chip.y + 1, chip.w - 2, chip.h - 2);
-            ctx.font = '8px "JetBrains Mono",monospace';
-            ctx.fillStyle = ac(0.3);
-            ctx.textAlign = 'center';
-            ctx.fillText(chip.id, chip.x + chip.w / 2, chip.y + chip.h / 2 + 3);
-            ctx.textAlign = 'left';
+            const gn = cppGraphNodes;
+            const edges = [[0,2],[0,3],[1,3],[1,4],[2,5],[3,5],[4,5]];
+            // Draw edges
+            edges.forEach(([fi,ti]) => {
+                const f = gn[fi], to = gn[ti];
+                ctx.strokeStyle = wh(0.14); ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(to.x, to.y); ctx.stroke();
+                const dx = to.x-f.x, dy = to.y-f.y, d = Math.hypot(dx,dy);
+                arrowHead(to.x-dx/d*13, to.y-dy/d*13, dx/d, dy/d, wh(0.18));
+            });
+
+            // 4 threads — paths through DAG, edge takes 3.5 s each
+            const paths    = [[0,2,5],[0,3,5],[1,3,5],[1,4,5]];
+            const tCols    = [ac, ac2, amb, grn];
+            const tLabels  = ['T0','T1','T2','T3'];
+            const tOffsets = [0, 0.7, 1.3, 2.0];
+            const edgeDur  = 3.4;
+            let deadlock = false;
+            const tPos = paths.map((path, ti) => {
+                const elapsed = sceneT - tOffsets[ti];
+                if (elapsed <= 0) return null;
+                const prog = elapsed / edgeDur;
+                const ei = Math.min(Math.floor(prog), path.length - 2);
+                const ef = Math.min(1, prog - ei);
+                const fN = gn[path[ei]], tN = gn[path[ei + 1] ?? path[ei]];
+                const atNode = ef > 0.92 ? path[ei + 1] ?? path[ei] : path[ei];
+                return {x: lerp(fN.x, tN.x, ef), y: lerp(fN.y, tN.y, ef), atNode, ti};
+            });
+            // Deadlock: T1 and T2 both at D (node 3)
+            const atD = tPos.filter(p => p && p.atNode === 3);
+            if (atD.length >= 2) deadlock = true;
+
+            // Nodes
+            gn.forEach((n, i) => {
+                const contested = i === 3 && deadlock;
+                ctx.fillStyle = contested ? ac2(0.22) : wh(0.07);
+                ctx.strokeStyle = contested ? ac2(0.65) : wh(0.28);
+                ctx.lineWidth = contested ? 2 : 1;
+                roundRect(ctx, n.x-20, n.y-14, 40, 28, 4); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = contested ? ac2(0.90) : wh(0.52);
+                ctx.font = '700 9px "JetBrains Mono",monospace'; ctx.textAlign='center';
+                ctx.fillText(n.id, n.x, n.y+4);
+            });
+
+            // Thread runners
+            tPos.forEach(p => {
+                if (!p) return;
+                const frozen = deadlock && p.atNode === 3;
+                const ox = frozen ? (p.ti === 1 ? -11 : 11) : 0;
+                ctx.fillStyle = tCols[p.ti](0.78);
+                ctx.beginPath(); ctx.arc(p.x + ox, p.y, 7, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = wh(0.80); ctx.font='700 7px "JetBrains Mono",monospace'; ctx.textAlign='center';
+                ctx.fillText(tLabels[p.ti], p.x + ox, p.y + 3);
+            });
+
+            // Deadlock explosion + std::terminate()
+            if (deadlock && sceneT > 6.5) {
+                const dlAge = sceneT - 6.5;
+                const pulse = Math.sin(dlAge * 5.5) * 0.38 + 0.50;
+                ctx.strokeStyle = ac2(pulse * 0.58);
+                ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(gn[3].x, gn[3].y, 25 + dlAge * 4.5, 0, Math.PI * 2); ctx.stroke();
+                if (dlAge > 2.2) {
+                    ctx.fillStyle = ac2(Math.min(1, dlAge - 2.2) * 0.78);
+                    ctx.font = '700 12px "JetBrains Mono",monospace'; ctx.textAlign = 'center';
+                    ctx.fillText('std::terminate()', W * 0.5, H * 0.72);
+                }
+            }
+            const PW=Math.min(258,W*0.22),PH=102,PX2=38,PY2=H-PH-48;
+            const HDR=drawTerminalPanel(PX2,PY2,PW,PH,'C++ // TOPO+THREADS');
+            drawLogLines([
+                {at:0.0,k:'cmd',s:'> std::execution::par'},
+                {at:0.8,k:'cmd',s:'thread_pool.submit(topo)'},
+                {at:2.0,k:'hi', s:'T1, T2 → node D: LOCK'},
+                {at:4.5,k:'dim',s:'waiting for mutex...'},
+                {at:6.5,k:'hi', s:'DEADLOCK DETECTED'},
+                {at:8.5,k:'cmd',s:'std::terminate()  ☠'},
+            ], sceneT, PX2, PY2, PW, PH, HDR);
         }
 
-        // Vias
-        ctx.strokeStyle = ac2(0.25);
-        ctx.lineWidth = 0.7;
-        for (const v of icLayout.vias) {
-            ctx.beginPath(); ctx.arc(v.x, v.y, 2.5, 0, Math.PI * 2); ctx.stroke();
+        // ── Scene 1: C++ Heap Leak ────────────────────────────────────────────
+        else if (scene === 1) {
+            const cols = 14, rows = 7;
+            const cw = Math.min(38, (W - 120) / cols), ch = 26;
+            const gx = (W - cols * cw) * 0.5, gy = H * 0.28;
+            if (!cppMemGrid) {
+                cppMemGrid = Array.from({length: cols * rows}, (_, i) => ({
+                    state: 'free',
+                    age: Math.random() * 6,
+                    isLeak: Math.random() < 0.28,
+                    allocAt: 0.4 + Math.random() * 4,
+                }));
+            }
+            cppMemGrid.forEach((cell, i) => {
+                const elapsed = sceneT - cell.allocAt;
+                if (elapsed > 0 && cell.state === 'free') cell.state = 'alloc';
+                if (cell.state === 'alloc' && !cell.isLeak && elapsed > 2.5) cell.state = 'freed';
+                if (cell.state === 'alloc' && cell.isLeak && elapsed > 5.5) cell.state = 'leak';
+            });
+            // Draw cells
+            cppMemGrid.forEach((cell, i) => {
+                const cx2 = gx + (i % cols) * cw, cy2 = gy + Math.floor(i / cols) * ch;
+                const col = cell.state==='free'?wh(0.07):cell.state==='alloc'?ac(0.35):cell.state==='freed'?grn(0.28):ac2(0.50);
+                ctx.fillStyle = col; ctx.fillRect(cx2+1, cy2+1, cw-3, ch-3);
+                ctx.strokeStyle = cell.state==='leak'?ac2(0.60):wh(0.10); ctx.lineWidth=0.8;
+                ctx.strokeRect(cx2+1, cy2+1, cw-3, ch-3);
+                if (cell.state==='leak') {
+                    ctx.fillStyle = ac2(0.50); ctx.font='7px "JetBrains Mono",monospace';
+                    ctx.textAlign='center'; ctx.fillText('LEAK', cx2+cw*0.5, cy2+ch*0.6);
+                }
+            });
+            // Heap bar
+            const leakCount = cppMemGrid.filter(c=>c.state==='leak').length;
+            const allocCount= cppMemGrid.filter(c=>c.state==='alloc'||c.state==='leak').length;
+            const barW=180, barX=(W-barW)*0.5, barY=gy+rows*ch+20;
+            ctx.fillStyle=wh(0.08); ctx.fillRect(barX,barY,barW,12);
+            const fillW = barW * Math.min(1, allocCount/(cols*rows));
+            const fillCol = leakCount>4?ac2(0.55):amb(0.60);
+            ctx.fillStyle=fillCol; ctx.fillRect(barX,barY,fillW,12);
+            ctx.strokeStyle=wh(0.18); ctx.lineWidth=1; ctx.strokeRect(barX,barY,barW,12);
+            ctx.fillStyle=wh(0.35); ctx.font='7px "JetBrains Mono",monospace'; ctx.textAlign='center';
+            ctx.fillText(`HEAP ${Math.round(fillW/barW*100)}%`, barX+barW*0.5, barY-6);
+            // SEGFAULT flash
+            if (leakCount > 14 || sceneT > 8.5) {
+                const flA = Math.sin(t * 8) * 0.4 + 0.45;
+                ctx.fillStyle = ac2(flA * 0.18); ctx.fillRect(0,0,W,H);
+                ctx.fillStyle = ac2(flA); ctx.font='700 14px "JetBrains Mono",monospace';
+                ctx.textAlign='center'; ctx.fillText('SEGFAULT', W*0.5, H*0.78);
+            }
+            const PW=Math.min(258,W*0.22),PH=100,PX2=38,PY2=H-PH-48;
+            const HDR=drawTerminalPanel(PX2,PY2,PW,PH,'C++ // HEAP AUDIT');
+            drawLogLines([
+                {at:0,  k:'cmd',s:'> valgrind ./app'},
+                {at:0.6,k:'dim',s:'definitely lost: ?'},
+                {at:2.0,k:'hi', s:`leaks: ${leakCount} blocks`},
+                {at:4.0,k:'dim',s:'// TODO: call delete'},
+                {at:7.0,k:'cmd',s:'// (written 2008)'},
+                {at:8.5,k:'hi', s:'SEGFAULT ☠'},
+            ], sceneT, PX2, PY2, PW, PH, HDR);
         }
 
-        // Animated signal packets
-        if (Math.random() < 0.05 && icPkts.length < 24) {
-            const tr = icLayout.traces[Math.floor(Math.random() * icLayout.traces.length)];
-            icPkts.push({ tr, p: 0, speed: 0.25 + Math.random() * 0.5 });
-        }
-        icPkts.forEach(pk => { pk.p += lastDt * pk.speed; });
-        icPkts = icPkts.filter(pk => pk.p < 1);
+        // ── Scene 2: Python Indentation ──────────────────────────────────────
+        else if (scene === 2) {
+            const lineCount = 8, lineH = 28;
+            const baseX = W * 0.22, baseY = H * 0.22;
+            const INDENTS = [0, 1, 1, 2, 2, 1, 2, 3]; // spaces * 16px
+            const snippets = ['def solve():', '  if x > 0:', '    for i in range(n):', '      result = compute(i)',
+                              '      yield result', '  elif x == 0:', '    return base_case()', '      pass ← 💀'];
+            // Chaos trigger every ~4s
+            const chaos = Math.sin(sceneT * Math.PI / 4 + 0.5) < -0.6;
+            const chaosAmt = chaos ? Math.abs(Math.sin(sceneT * 6)) * 18 : 0;
 
-        ctx.fillStyle = ac(0.85);
-        for (const pk of icPkts) {
-            const px = pk.tr.horiz ? lerp(pk.tr.x0, pk.tr.x1, pk.p) : pk.tr.x0;
-            const py = pk.tr.horiz ? pk.tr.y0 : lerp(pk.tr.y0, pk.tr.y1, pk.p);
-            ctx.beginPath(); ctx.arc(px, py, 2.5, 0, Math.PI * 2); ctx.fill();
+            for (let li = 0; li < lineCount; li++) {
+                const indent = INDENTS[li] * 18;
+                const isBad = li === 7;
+                const y = baseY + li * lineH + (chaos ? (Math.random()-0.5)*chaosAmt : 0);
+                const x = baseX + indent + (isBad && !chaos ? 6 : 0); // misaligned
+                // Indent block
+                for (let d = 0; d < INDENTS[li]; d++) {
+                    ctx.fillStyle = ['rgba(0,255,255,0.10)','rgba(255,0,255,0.08)','rgba(57,255,20,0.07)'][d % 3];
+                    ctx.fillRect(baseX + d*18, y - 3, 16, lineH - 6);
+                }
+                ctx.fillStyle = isBad ? ac2(0.70) : ac(0.55);
+                ctx.font = `${isBad?'700':''} 8px "JetBrains Mono",monospace`; ctx.textAlign = 'left';
+                ctx.fillText(snippets[li], x, y + 12);
+            }
+
+            // Panic flash on chaos
+            if (chaos) {
+                ctx.fillStyle = ac2(0.08 + Math.abs(Math.sin(sceneT*7))*0.08);
+                ctx.fillRect(0, 0, W, H);
+                ctx.fillStyle = ac2(0.55); ctx.font='700 11px "JetBrains Mono",monospace';
+                ctx.textAlign='center'; ctx.fillText('IndentationError', W*0.5, H*0.76);
+            }
+
+            // Snake (sine wave, green, unbothered)
+            ctx.strokeStyle = grn(0.58); ctx.lineWidth = 3;
+            ctx.beginPath();
+            const snakeOff = t * 55;
+            for (let x = 0; x <= W; x += 6) {
+                const sy2 = H * 0.80 + Math.sin((x + snakeOff) * 0.022) * 18;
+                x === 0 ? ctx.moveTo(x, sy2) : ctx.lineTo(x, sy2);
+            }
+            ctx.stroke();
+            // Snake head
+            const hx = (snakeOff * 0.7) % W, hy = H*0.80 + Math.sin((hx+snakeOff)*0.022)*18;
+            ctx.fillStyle = grn(0.75); ctx.beginPath(); ctx.arc(hx, hy, 7, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = wh(0.80); ctx.font='7px "JetBrains Mono",monospace'; ctx.textAlign='center';
+            ctx.fillText('🐍', hx, hy+3);
+
+            const PW=Math.min(258,W*0.22),PH=100,PX2=38,PY2=H-PH-48;
+            const HDR=drawTerminalPanel(PX2,PY2,PW,PH,'PYTHON // INDENT');
+            drawLogLines([
+                {at:0.0,k:'cmd',s:'> python solve.py'},
+                {at:0.6,k:'dim',s:'...running...'},
+                {at:3.5,k:'hi', s:'IndentationError:'},
+                {at:4.2,k:'cmd',s:'unexpected indent'},
+                {at:4.8,k:'dim',s:'# snake: unbothered'},
+            ], sceneT, PX2, PY2, PW, PH, HDR);
         }
 
-        // Info panel
-        const PX = 44, PY = 58;
-        drawTerminalPanel(PX, PY, 200, 58, 'IC-TRACE-VIEW');
-        ctx.font = '9px "JetBrains Mono",monospace';
-        ctx.fillStyle = grn(0.45);
-        ctx.textAlign = 'left';
-        ctx.fillText(`signals: ${icPkts.length}`, PX + 10, PY + 36);
-        ctx.fillText(`layer: METAL-1`, PX + 10, PY + 50);
-        ctx.lineWidth = 1;
+        // ── Scene 3: Rust Borrow Checker ──────────────────────────────────────
+        else if (scene === 3) {
+            const RES_X = W * 0.50, RES_Y = H * 0.40;
+            const P1_X = W * 0.20, P1_Y = H * 0.40;
+            const P2_X = W * 0.80, P2_Y = H * 0.40;
+            const BC_Y = H * 0.24;
+            // Phase: P1 owns for first 7s, transfer at 7s, P2 owns for rest
+            const p1owns = sceneT < 7;
+            const ownerX = p1owns ? P1_X : P2_X;
+
+            // Resource box
+            ctx.fillStyle = wh(0.10); roundRect(ctx, RES_X-28, RES_Y-18, 56, 36, 5); ctx.fill();
+            ctx.strokeStyle = p1owns ? ac(0.55) : ac2(0.55); ctx.lineWidth = 2;
+            roundRect(ctx, RES_X-28, RES_Y-18, 56, 36, 5); ctx.stroke();
+            ctx.fillStyle = wh(0.55); ctx.font='700 8px "JetBrains Mono",monospace'; ctx.textAlign='center';
+            ctx.fillText('data', RES_X, RES_Y+4);
+
+            // Ownership arrow
+            const ownA = eio(Math.min(1, Math.abs(sceneT - 7) / 1.2));
+            ctx.strokeStyle = p1owns ? ac(0.50 * ownA) : ac2(0.50 * ownA); ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(ownerX, p1owns ? P1_Y : P2_Y);
+            ctx.lineTo(RES_X, RES_Y); ctx.stroke();
+            ctx.fillStyle = p1owns ? ac(0.35) : ac2(0.35); ctx.font='7px "JetBrains Mono",monospace';
+            ctx.textAlign='center';
+            ctx.fillText('owns', (ownerX + RES_X)*0.5, (p1owns?P1_Y:P2_Y + RES_Y)*0.5 - 6);
+
+            // P1 node (cyan)
+            ctx.fillStyle = ac(0.20); ctx.strokeStyle = ac(0.60); ctx.lineWidth = 2;
+            roundRect(ctx, P1_X-28, P1_Y-18, 56, 36, 5); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = p1owns ? ac(0.80) : ac(0.35); ctx.font='700 8px "JetBrains Mono",monospace'; ctx.textAlign='center';
+            ctx.fillText(p1owns ? '✓ OWNER' : 'process_a', P1_X, P1_Y+4);
+
+            // P2 node (pink) — blocked red barrier when trying to mutate
+            const p2blocked = sceneT < 7 && sceneT > 1.5;
+            ctx.fillStyle = ac2(0.18); ctx.strokeStyle = p2blocked ? ac2(0.65) : ac2(0.55); ctx.lineWidth = 2;
+            roundRect(ctx, P2_X-28, P2_Y-18, 56, 36, 5); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = p2blocked ? ac2(0.80) : (p1owns ? ac2(0.55) : ac2(0.80));
+            ctx.font='700 8px "JetBrains Mono",monospace'; ctx.textAlign='center';
+            ctx.fillText(p2blocked ? '✗ BLOCKED' : (p1owns ? 'process_b' : '✓ OWNER'), P2_X, P2_Y+4);
+
+            // P2 tries to reach resource — red barrier
+            if (p2blocked) {
+                const barX = (P2_X + RES_X) * 0.5;
+                ctx.fillStyle = ac2(0.18); ctx.fillRect(barX-4, P2_Y-30, 8, 60);
+                ctx.strokeStyle = ac2(0.55); ctx.lineWidth = 1.5;
+                ctx.strokeRect(barX-4, P2_Y-30, 8, 60);
+            }
+
+            // Borrow Checker entity (amber, top center)
+            const bcPulse = Math.sin(t * 1.8) * 0.08 + 0.22;
+            ctx.fillStyle = amb(bcPulse); roundRect(ctx, W*0.5-50, BC_Y-18, 100, 36, 6); ctx.fill();
+            ctx.strokeStyle = amb(0.65); ctx.lineWidth = 2; roundRect(ctx, W*0.5-50, BC_Y-18, 100, 36, 6); ctx.stroke();
+            ctx.fillStyle = amb(0.80); ctx.font='700 8px "JetBrains Mono",monospace'; ctx.textAlign='center';
+            ctx.fillText('BORROW CHECKER', W*0.5, BC_Y+4);
+            // Watchlines from BC to nodes
+            [P1_X, P2_X].forEach(nx => {
+                ctx.strokeStyle = amb(0.18); ctx.lineWidth = 1; ctx.setLineDash([3,5]);
+                ctx.beginPath(); ctx.moveTo(W*0.5, BC_Y+18); ctx.lineTo(nx, P1_Y-18); ctx.stroke();
+                ctx.setLineDash([]);
+            });
+
+            const PW=Math.min(258,W*0.22),PH=105,PX2=38,PY2=H-PH-48;
+            const HDR=drawTerminalPanel(PX2,PY2,PW,PH,'RUST // BORROW CHECK');
+            drawLogLines([
+                {at:0.0,k:'cmd',s:'> cargo build'},
+                {at:0.5,k:'hi', s:'error[E0502]:'},
+                {at:1.2,k:'dim',s:'cannot borrow `data`'},
+                {at:1.9,k:'dim',s:'as mutable — borrowed'},
+                {at:2.6,k:'cmd',s:'as immutable here'},
+                {at:6.5,k:'ok', s:'ownership transferred'},
+                {at:7.5,k:'ok', s:'cargo build — OK ✓'},
+            ], sceneT, PX2, PY2, PW, PH, HDR);
+        }
+
+        // ── Scene 4: Ruby on Rails Magic ─────────────────────────────────────
+        else if (scene === 4) {
+            const items = [
+                {label:'Model',    x:W*0.26, y:H*0.26, born:0.5},
+                {label:'Table',    x:W*0.50, y:H*0.26, born:1.2},
+                {label:'Controller',x:W*0.74,y:H*0.26, born:1.9},
+                {label:'View',     x:W*0.38, y:H*0.50, born:2.6},
+                {label:'Route',    x:W*0.62, y:H*0.50, born:3.3},
+            ];
+            // Version flip at 6s → reconnect chaos
+            const v7 = sceneT > 6.5;
+            const links = [[0,1],[1,2],[0,3],[2,4],[3,4]];
+
+            // Connections (drawn before boxes)
+            links.forEach(([a,b]) => {
+                const ia = items[a], ib = items[b];
+                if (sceneT < ia.born || sceneT < ib.born) return;
+                const age = Math.min(sceneT - Math.max(ia.born,ib.born), 1);
+                ctx.strokeStyle = v7 ? ac2(0.20 + Math.sin(t*2.2+(a+b))*0.12) : ac2(0.35 * age);
+                ctx.lineWidth = 1.2;
+                ctx.beginPath();
+                if (v7) {
+                    // Chaos — connections wobble
+                    const ox = Math.sin(t*1.5+a*1.3)*14, oy = Math.cos(t*1.8+b*0.9)*14;
+                    ctx.moveTo(ia.x+ox, ia.y+oy); ctx.lineTo(ib.x-ox, ib.y-oy);
+                } else {
+                    ctx.moveTo(ia.x, ia.y); ctx.lineTo(ib.x, ib.y);
+                }
+                ctx.stroke();
+            });
+
+            // Boxes
+            items.forEach(item => {
+                if (sceneT < item.born) return;
+                const age = Math.min((sceneT - item.born) / 0.35, 1);
+                const ox = v7 ? Math.sin(t*1.4+item.x*0.01)*8 : 0;
+                const oy = v7 ? Math.cos(t*1.6+item.y*0.01)*6 : 0;
+                // Sparkle on spawn
+                if (age < 1) {
+                    for (let s = 0; s < 5; s++) {
+                        const sa = (s/5)*Math.PI*2, sr = (1-age)*28;
+                        ctx.fillStyle = ac2(age * 0.55);
+                        ctx.beginPath(); ctx.arc(item.x+Math.cos(sa)*sr, item.y+Math.sin(sa)*sr, 2.5, 0, Math.PI*2); ctx.fill();
+                    }
+                }
+                ctx.fillStyle = ac2(0.12 * age);
+                roundRect(ctx, item.x+ox-36, item.y+oy-14, 72, 28, 5); ctx.fill();
+                ctx.strokeStyle = ac2(0.55 * age); ctx.lineWidth = 1.5;
+                roundRect(ctx, item.x+ox-36, item.y+oy-14, 72, 28, 5); ctx.stroke();
+                ctx.fillStyle = ac2(0.80 * age); ctx.font='700 8px "JetBrains Mono",monospace'; ctx.textAlign='center';
+                ctx.fillText(item.label, item.x+ox, item.y+oy+4);
+            });
+
+            // ✨ magic sparks drifting
+            for (let i = 0; i < 12; i++) {
+                const sp = (i/12 + t*0.18) % 1;
+                const sx = W*0.1 + sp*(W*0.8), sy = H*0.7 + Math.sin(sp*Math.PI*4+t)*22;
+                ctx.fillStyle = ac2(0.20 + Math.sin(sp*6.3)*0.15);
+                ctx.font='9px sans-serif'; ctx.textAlign='center';
+                ctx.fillText('✦', sx, sy);
+            }
+
+            // Version label
+            ctx.fillStyle = ac2(0.38); ctx.font='700 10px "JetBrains Mono",monospace'; ctx.textAlign='center';
+            ctx.fillText(v7?'Rails 7 — Reconfiguring…':'Rails 6 — Convention > Config', W*0.5, H*0.72);
+
+            const PW=Math.min(258,W*0.22),PH=100,PX2=38,PY2=H-PH-48;
+            const HDR=drawTerminalPanel(PX2,PY2,PW,PH,'RUBY // RAILS MAGIC');
+            drawLogLines([
+                {at:0.0,k:'cmd',s:'> rails generate scaffold'},
+                {at:0.8,k:'ok', s:'create  app/models/'},
+                {at:1.5,k:'ok', s:'create  app/controllers/'},
+                {at:2.2,k:'ok', s:'create  app/views/'},
+                {at:3.0,k:'ok', s:'✦ magic complete'},
+                {at:6.5,k:'hi', s:'gem update rails → 7'},
+                {at:7.2,k:'dim',s:'convention changed 🙃'},
+            ], sceneT, PX2, PY2, PW, PH, HDR);
+        }
+
+        // ── Scene 5: Lua – The Table That Does Everything ─────────────────────
+        else if (scene === 5) {
+            const TX = W * 0.50, TY = H * 0.38;
+            const ROLES = ['[ ] ARRAY','{ } MAP',': METHOD','require MODULE'];
+            const ROLE_COLS = [grn, ac, amb, ac2];
+            const roleIdx = Math.floor(sceneT / 2.1) % ROLES.length;
+            const roleT   = (sceneT % 2.1) / 2.1;
+
+            // Central TABLE box
+            const boxA = 0.85 + Math.sin(t * 1.2) * 0.08;
+            ctx.fillStyle = grn(0.18 * boxA); roundRect(ctx, TX-50, TY-22, 100, 44, 7); ctx.fill();
+            ctx.strokeStyle = grn(0.65 * boxA); ctx.lineWidth = 2.5; roundRect(ctx, TX-50, TY-22, 100, 44, 7); ctx.stroke();
+            ctx.fillStyle = grn(0.90); ctx.font='700 11px "JetBrains Mono",monospace'; ctx.textAlign='center';
+            ctx.fillText('TABLE', TX, TY+5);
+
+            // Role label morphing
+            const roleA = eio(Math.min(1, roleT * 4)) * eio(Math.min(1, (1-roleT) * 4));
+            ctx.fillStyle = ROLE_COLS[roleIdx](0.70 * roleA);
+            ctx.font='700 9px "JetBrains Mono",monospace'; ctx.textAlign='center';
+            ctx.fillText(ROLES[roleIdx], TX, TY + 38);
+
+            // Orbiting satellite labels
+            const orbits = ['arr[1]','map.key','obj:fn()','pkg.exports','arr[2]','nil?'];
+            orbits.forEach((lbl, i) => {
+                const ang = t * (0.38 + i*0.04) + i * Math.PI * 2 / orbits.length;
+                const rx2 = TX + Math.cos(ang) * (90 + i*6), ry2 = TY + Math.sin(ang) * (52 + i*3);
+                ctx.fillStyle = grn(0.30 + Math.sin(ang)*0.12);
+                ctx.font='7px "JetBrains Mono",monospace'; ctx.textAlign='center';
+                ctx.fillText(lbl, rx2, ry2);
+                // Dotted orbit line to center
+                ctx.strokeStyle = grn(0.12); ctx.lineWidth=0.8; ctx.setLineDash([2,4]);
+                ctx.beginPath(); ctx.moveTo(TX, TY); ctx.lineTo(rx2, ry2); ctx.stroke();
+                ctx.setLineDash([]);
+            });
+
+            const PW=Math.min(258,W*0.22),PH=100,PX2=38,PY2=H-PH-48;
+            const HDR=drawTerminalPanel(PX2,PY2,PW,PH,'LUA // TABLES');
+            drawLogLines([
+                {at:0.0,k:'cmd',s:'> lua app.lua'},
+                {at:0.5,k:'dim',s:'t = {}  -- array?'},
+                {at:1.5,k:'dim',s:'t = {}  -- map?'},
+                {at:2.5,k:'dim',s:'t = {}  -- object?'},
+                {at:3.5,k:'hi', s:'t = {}  -- yes.'},
+                {at:4.5,k:'ok', s:'arrays start at 1 🙂'},
+            ], sceneT, PX2, PY2, PW, PH, HDR);
+        }
     }
 
     /* ══════════════════════════════════════════════════════════════════════════
@@ -1349,15 +1940,17 @@
     ══════════════════════════════════════════════════════════════════════════ */
     const MODE_LABELS = [
         'EMBEDDED-COMPILE','GDB-DEBUG','NET-TOPOLOGY',
-        'PID-BLOCK-DIAGRAM','GRAD-DESCENT','TRAJECTORY',
+        'PID-ADAPTIVE-NN','GRAD-DESCENT','TRAJECTORY',
         'NEURAL-NET','FSM-DIAGRAM','KALMAN-FILTER','SVC-MESH',
-        'HEX-GRID','SIERPINSKI-CHAOS','GAUSSIAN-DIST','CONWAY-GOL','IC-TRACES',
+        'HEX-GRID','SIERPINSKI-CHAOS','GAUSSIAN-DIST','CONWAY-GOL',
+        'COBOT-UR5','CODE-HUMOR',
     ];
     const MODES = [
         drawEmbeddedCompile, drawGDB, drawTopology,
         drawBlockDiagram, drawGradientDescent, drawRocketry,
         drawNeuralNet, drawFSM, drawKalman, drawDockerStack,
-        drawHexGrid, drawSierpinski, drawGaussian, drawGameOfLife, drawICTraces,
+        drawHexGrid, drawSierpinski, drawGaussian, drawGameOfLife,
+        drawCollabRobots, drawCodeHumor,
     ];
     const N = MODES.length;
 
@@ -1373,22 +1966,32 @@
         }
     }
 
-    /* ── Mode picker ────────────────────────────────────────────────────────── */
+    /* ── CSS grid visibility (hidden during hex canvas mode) ───────────────── */
+    const HEX_IDX = 10; // index of drawHexGrid in MODES
+    function setCSSGridVisible(show) {
+        if (gridLinesEl) gridLinesEl.style.opacity = show ? '' : '0';
+        if (gridGlowEl)  gridGlowEl.style.opacity  = show ? '' : '0';
+    }
+
+    /* ── Mode picker (Fisher-Yates shuffle deck) ────────────────────────────── */
     function pickNextMode() {
-        const HEX = 10;  // index of drawHexGrid in MODES
-        // Build weighted pool: HEX-GRID gets 4 extra slots (~4× more likely)
-        const pool = [];
-        for (let i = 0; i < N; i++) pool.push(i);
-        pool.push(HEX, HEX, HEX, HEX);
-
-        // Exclude the last 3 played modes so nothing repeats within 4 turns
-        const exclude = new Set(modeHistory.slice(-3));
-        const candidates = pool.filter(i => !exclude.has(i));
-        // Fallback: if all candidates excluded (tiny pool), allow all
-        const chosen = (candidates.length > 0 ? candidates : pool)[Math.floor(Math.random() * (candidates.length || pool.length))];
-
-        modeHistory.push(chosen);
-        if (modeHistory.length > 3) modeHistory.shift();
+        if (modeDeck.length === 0) {
+            // Refill: every mode appears exactly once per cycle
+            modeDeck = Array.from({length: N}, (_, i) => i);
+            // Fisher-Yates shuffle
+            for (let i = modeDeck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [modeDeck[i], modeDeck[j]] = [modeDeck[j], modeDeck[i]];
+            }
+            // Prevent the new deck's first card from being the same as the last played
+            if (modeDeck.length > 1 && modeDeck[modeDeck.length - 1] === lastPlayedIdx) {
+                const swapIdx = Math.floor(Math.random() * (modeDeck.length - 1));
+                [modeDeck[swapIdx], modeDeck[modeDeck.length - 1]] =
+                    [modeDeck[modeDeck.length - 1], modeDeck[swapIdx]];
+            }
+        }
+        const chosen = modeDeck.pop();
+        lastPlayedIdx = chosen;
         return chosen;
     }
 
@@ -1396,8 +1999,10 @@
     function resize() {
         W=canvas.width=window.innerWidth; H=canvas.height=window.innerHeight;
         topoNodes=null; gdPaths=null; kalmanMeas=null; svcPkt=[];
-        golGrid=null; icLayout=null; icPkts=[];
+        golGrid=null;
         sierpPt=null;
+        cobotItems=null; osBranches=null; osStars=[];
+        cppGraphNodes=null; cppMemGrid=null;
     }
 
     function frame(ts) {
@@ -1410,12 +2015,14 @@
             if (!restPhase) {
                 restPhase=true;
                 restDuration=5+Math.random()*10;   // 5–15 s interval
+                setCSSGridVisible(true);            // restore CSS grid during rest
             } else {
                 restPhase=false;
                 currentModeDuration=20+Math.random()*280;   // 20 s – 5 min
                 modeIdx=pickNextMode();
+                setCSSGridVisible(modeIdx !== HEX_IDX); // hide CSS grid under hex mode
                 topoNodes=null; gdPaths=null; kalmanMeas=null; svcPkt=[];
-                golGrid=null; icLayout=null; icPkts=[];
+                golGrid=null;
                 sierpPt=null;
             }
         }
@@ -1431,6 +2038,10 @@
     }
 
     window.addEventListener('resize', resize);
+    modeIdx = pickNextMode(); // random first mode on every page load
     resize();
-    requestAnimationFrame(ts => { lastTs=ts; requestAnimationFrame(frame); });
+    // 8-second startup delay before canvas animations begin
+    setTimeout(() => {
+        requestAnimationFrame(ts => { lastTs=ts; requestAnimationFrame(frame); });
+    }, 8000);
 }());
