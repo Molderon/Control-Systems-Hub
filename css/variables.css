@@ -1,0 +1,31 @@
+@charset "utf-8";
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary-grey: #e5e7eb;
+    --primary-orange: #f97316;
+    --primary-purple: #7c3aed;
+    --secondary-amber: #fbbf24;
+    --dark-bg: #1a0b2e;
+    --darker-bg: #0f051a;
+    --card-bg: rgba(229, 231, 235, 0.03);
+    --border-color: rgba(229, 231, 235, 0.2);
+    --text-primary: #ffffff;
+    --text-secondary: #a1a1aa;
+    --primary-cyan: #00ffff;
+    --primary-pink: #ff00ff;
+    /* RGB components for rgba() usage throughout the stylesheet */
+    --accent-r: 0;    --accent-g: 255;  --accent-b: 255;
+    --accent2-r: 255; --accent2-g: 0;   --accent2-b: 255;
+    /* Win-chrome titlebar tint */
+    --chrome-r: 0;    --chrome-g: 90;   --chrome-b: 130;
+    /* Nav overlay */
+    --nav-bg: rgba(15, 15, 35, 0.9);
+}
+
+/* ── Theme overrides (add body.theme-* blocks here as themes are built out) ── */
