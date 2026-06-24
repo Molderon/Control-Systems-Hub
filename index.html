@@ -4,53 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Control Systems - Technical University of Sofia, branch Plovdiv</title>
+    <link href="css/variables.css" rel="stylesheet">
     <link href="ControlSystems.css" rel="stylesheet">
+    <link href="css/features.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
-    <style>
-        /* Targeted fixes for Spacing, Card Width, and Gaps */
-        section {
-            padding-bottom: 110px !important;
-            padding-top: 110px !important;
-            margin-bottom: 0 !important;
-        }
-
-        #pricing {
-            padding-bottom: 160px !important;
-        }
-
-        .pricing-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 28px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .pricing-card {
-            min-width: 0;
-            min-height: 0;
-        }
-
-        .plan-features li {
-            white-space: nowrap; 
-            font-size: 0.95rem;
-        }
-
-        .contact {
-            padding-top: 40px !important;
-            padding-bottom: 40px !important;
-        }
-
-        .footer {
-            margin-top: 0 !important;
-            padding: 30px 0 !important;
-            background: transparent !important;
-            border-top: 1px solid rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.1);
-        }
-    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.34.0/dist/tabler-icons.min.css"
+          integrity="sha384-8zE3cHqgn3iJlsilASXr1IcXFP7TnplbXZSbvKuaUYjPUpcK7QhlyLE/cY7lIBTp" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" />
 </head>
 <body id="top">
     <div class="cyber-bg" aria-hidden="true">
@@ -81,6 +44,11 @@
                         <span class="btn-glitch"></span>
                     </a>
                 </div>
+                <button class="lang-toggle" id="langToggle" aria-label="Switch language">
+                    <span class="lang-opt lang-active" id="langEN">EN</span>
+                    <span class="lang-sep">//</span>
+                    <span class="lang-opt" id="langBG">BG</span>
+                </button>
             </div>
             <button class="mobile-menu-button" id="mobileMenuBtn">
                 <div class="hamburger"><span></span><span></span><span></span></div>
@@ -121,9 +89,9 @@
                      alt="Control Systems logo" aria-hidden="true">
             </div>
             <div class="hero-buttons">
-                <a href="#" class="btn-primary">
-                    <span class="btn-content">Solution Hotline</span>
-                </a>
+                <button class="btn-primary blog-open-btn" id="blogOpenBtn">
+                    <span class="btn-content">Blog</span>
+                </button>
                 
                 <div class="has-tooltip" data-tooltip='->_{_%_}["->_{_%%_}[%p]"]'>
                     <a href="about.html" class="btn-secondary">
@@ -135,13 +103,13 @@
     </section>
 
     <section class="features" id="features">
-        <h2 class="section-title">Core Features</h2>
+        <h2 class="section-title">Laboratory</h2>
         <p class="section-subtitle">"Welcome to the internet, have a look around."</p>
         <div class="features-container">
             <div class="feature-tabs">
                 <div class="tab-item active" data-tab="performance"><span class="tab-icon"><i class="ti ti-cpu icon-domains"></i></span><span>Domains</span></div>
                 <div class="tab-item" data-tab="security"><span class="tab-icon"><i class="ti ti-atom icon-publications"></i></span><span>Publications</span></div>
-                <div class="tab-item" data-tab="network"><span class="tab-icon"><i class="ti ti-calendar-due icon-events"></i></span><span>Events</span></div>
+                <div class="tab-item" data-tab="network"><span class="tab-icon"><i class="ti ti-code icon-events"></i></span><span>Home Brew</span></div>
                 <div class="tab-item" data-tab="analytics"><span class="tab-icon"><i class="ti ti-terminal-2 icon-hackathon"></i></span><span>Hackathon</span></div>
                 <div class="tab-item" data-tab="integration"><span class="tab-icon"><i class="ti ti-telescope icon-thesis"></i></span><span>Research</span></div>
             </div>
@@ -173,13 +141,45 @@
   └─────┘  └─────┘  └─────┘  └─────┘</pre>
                         <div class="term-content-layer">
                             <h3>Research Domains</h3>
-                            <p>Core areas of investigation at the Control Systems department, spanning classical theory to modern AI-driven approaches.</p>
-                            <ul class="feature-list">
-                                <li>Adaptive &amp; PID Control Systems</li>
-                                <li>Non-linear System Modeling &amp; Identification</li>
-                                <li>Intelligent Automation &amp; Robotics</li>
-                                <li>Machine Learning for Control Engineering</li>
-                            </ul>
+                            <p>Active fields of research and development across the doctoral group.</p>
+                            <div class="domain-grid">
+                                <div class="domain-card" data-domain="control-theory">
+                                    <i class="ti ti-settings-automation domain-icon"></i>
+                                    <div class="domain-info"><div class="domain-name">Control Theory</div><div class="domain-desc">Adaptive &amp; optimal control (LQR/MPC), plant modelling, stability analysis, H&#x221e; methods</div></div>
+                                </div>
+                                <div class="domain-card" data-domain="robotics">
+                                    <i class="ti ti-robot domain-icon"></i>
+                                    <div class="domain-info"><div class="domain-name">Robotics</div><div class="domain-desc">SLAM, ROS2 architecture, kinematic models, autonomous navigation, collaborative systems</div></div>
+                                </div>
+                                <div class="domain-card" data-domain="computer-science">
+                                    <i class="ti ti-terminal-2 domain-icon"></i>
+                                    <div class="domain-info"><div class="domain-name">Computer Science</div><div class="domain-desc">Low-level programming, firmware, backend systems, system architecture, OS internals</div></div>
+                                </div>
+                                <div class="domain-card" data-domain="symbolic-ai">
+                                    <i class="ti ti-hierarchy-2 domain-icon"></i>
+                                    <div class="domain-info"><div class="domain-name">Symbolic AI</div><div class="domain-desc">Knowledge representation, semantic webs, expert systems, logic programming, ontologies</div></div>
+                                </div>
+                                <div class="domain-card" data-domain="subsymbolic-ai">
+                                    <i class="ti ti-brain domain-icon"></i>
+                                    <div class="domain-info"><div class="domain-name">Sub-Symbolic AI</div><div class="domain-desc">Neural networks, deep learning, fuzzy logic, evolutionary algorithms, reinforcement learning</div></div>
+                                </div>
+                                <div class="domain-card" data-domain="data-science">
+                                    <i class="ti ti-chart-dots domain-icon"></i>
+                                    <div class="domain-info"><div class="domain-name">Data Science</div><div class="domain-desc">EDA, feature engineering, causal inference, anomaly detection, time-series analysis</div></div>
+                                </div>
+                                <div class="domain-card" data-domain="digital-twins">
+                                    <i class="ti ti-device-analytics domain-icon"></i>
+                                    <div class="domain-info"><div class="domain-name">Digital Twins</div><div class="domain-desc">Real-time synchronisation, physics-based simulation, IoT ingestion, IBM Twin frameworks</div></div>
+                                </div>
+                                <div class="domain-card" data-domain="erp-irp">
+                                    <i class="ti ti-building-factory-2 domain-icon"></i>
+                                    <div class="domain-info"><div class="domain-name">ERP / IRP</div><div class="domain-desc">IBM IRP: resource integration, process orchestration, OT/IT convergence, AI-driven planning</div></div>
+                                </div>
+                                <div class="domain-card" data-domain="industrial-engineering">
+                                    <i class="ti ti-trending-up domain-icon"></i>
+                                    <div class="domain-info"><div class="domain-name">Industrial Engineering</div><div class="domain-desc">Industry 5.0, human-machine collaboration, predictive manufacturing, future systems analysis</div></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="content-panel" id="security">
@@ -200,13 +200,31 @@
                    ·</pre>
                         <div class="term-content-layer">
                             <h3>Publications</h3>
-                            <p>Peer-reviewed research contributions in control theory, automation, and applied AI from the department.</p>
-                            <ul class="feature-list">
-                                <li>Adaptive PID Control via Reinforcement Learning</li>
-                                <li>Neural Networks for Non-Linear System ID</li>
-                                <li>Digital Twin Architectures for Industrial Control</li>
-                                <li>Collaboration: TU-Sofia main campus &amp; partners</li>
-                            </ul>
+                            <p>Peer-reviewed contributions from the doctoral group. Full articles available on the blog.</p>
+                            <div class="pub-list">
+                                <div class="pub-card">
+                                    <span class="pub-badge journal">Journal</span>
+                                    <div>
+                                        <a href="#" target="_blank" rel="noopener" class="pub-title">Adaptive PID Control via Reinforcement Learning for Nonlinear HVAC Systems</a>
+                                        <div class="pub-meta">R. Petrova &mdash; 2024 &mdash; <span class="pub-doi">DOI: 10.xxxx/placeholder</span></div>
+                                    </div>
+                                </div>
+                                <div class="pub-card">
+                                    <span class="pub-badge conference">Conference</span>
+                                    <div>
+                                        <a href="#" target="_blank" rel="noopener" class="pub-title">Neural Network Approximation for Nonlinear System Identification in Embedded Environments</a>
+                                        <div class="pub-meta">I. Karageorgiev &mdash; 2023 &mdash; <span class="pub-doi">arXiv: 2303.xxxxx</span></div>
+                                    </div>
+                                </div>
+                                <div class="pub-card">
+                                    <span class="pub-badge preprint">Preprint</span>
+                                    <div>
+                                        <a href="#" target="_blank" rel="noopener" class="pub-title">RL-Augmented Model Predictive Control for Autonomous Navigation on Constrained Hardware</a>
+                                        <div class="pub-meta">M. Medev &mdash; 2025 &mdash; <span class="pub-doi">arXiv: 2501.xxxxx</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <a href="blog.html" class="pub-cta"><i class="ti ti-arrow-right"></i> Read all on the blog</a>
                         </div>
                     </div>
                     <div class="content-panel" id="network">
@@ -224,15 +242,83 @@
   ║ 21  ║ 22  ║ 23  ║ 24  ║  25  ║
   ╚═════╩═════╩═════╩═════╩══════╝
       ▲  SEMINAR  —  FRI 14:00  ▲</pre>
-                        <div class="term-content-layer">
-                            <h3>Events</h3>
-                            <p>Seminars, workshops, and academic events hosted by the Control Systems department at TU-Sofia, Plovdiv.</p>
-                            <ul class="feature-list">
-                                <li>Weekly Seminar — Fridays 14:00, Room №4319</li>
-                                <li>Annual Control Systems Symposium</li>
-                                <li>TU-Plovdiv Open Day (see university calendar)</li>
-                                <li>International Robotics &amp; Automation Challenges</li>
-                            </ul>
+                        <div class="term-content-layer hb-layer">
+                            <h3>Home Brew</h3>
+                            <p>Open source projects built by the group. Sorted by contributors.</p>
+                            <div id="homebrew-grid" class="hb-grid">
+                                <div class="hb-card" data-slug="pidlab">
+                                    <div class="hb-logo-bg hb-logo-default"></div>
+                                    <div class="hb-card-inner">
+                                        <div class="hb-card-header">
+                                            <span class="hb-name">PIDLab</span>
+                                            <span class="hb-contributors"><i class="ti ti-users"></i> 11</span>
+                                        </div>
+                                        <p class="hb-desc">Browser-based interactive PID controller simulator. Tune gains in real time and observe step response, Bode plots, and root locus with live feedback. Built for students and educators.</p>
+                                        <div class="hb-tags">
+                                            <span class="hb-tag">PID</span>
+                                            <span class="hb-tag">Simulation</span>
+                                            <span class="hb-tag">Browser</span>
+                                            <span class="hb-tag">Education</span>
+                                        </div>
+                                        <div class="hb-footer">
+                                            <div class="hb-stack">
+                                                <span class="hb-stack-badge">JavaScript</span>
+                                                <span class="hb-stack-badge">WebAssembly</span>
+                                                <span class="hb-stack-badge">SVG</span>
+                                            </div>
+                                            <a href="#" class="hb-github-link"><i class="ti ti-brand-github"></i> petrova</a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="hb-card" data-slug="openctrl">
+                                    <div class="hb-logo-bg hb-logo-default"></div>
+                                    <div class="hb-card-inner">
+                                        <div class="hb-card-header">
+                                            <span class="hb-name">OpenCTRL</span>
+                                            <span class="hb-contributors"><i class="ti ti-users"></i> 7</span>
+                                        </div>
+                                        <p class="hb-desc">Open-source PID tuning and analysis toolkit for embedded targets. Supports live parameter sweeps, step-response visualisation, and direct export to C header files ready for MCU flashing.</p>
+                                        <div class="hb-tags">
+                                            <span class="hb-tag">Embedded</span>
+                                            <span class="hb-tag">Control Theory</span>
+                                            <span class="hb-tag">PID</span>
+                                            <span class="hb-tag">Tooling</span>
+                                        </div>
+                                        <div class="hb-footer">
+                                            <div class="hb-stack">
+                                                <span class="hb-stack-badge">C++</span>
+                                                <span class="hb-stack-badge">Python</span>
+                                                <span class="hb-stack-badge">CMake</span>
+                                            </div>
+                                            <a href="#" class="hb-github-link"><i class="ti ti-brand-github"></i> karageorgiev</a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="hb-card" data-slug="neurofuzz">
+                                    <div class="hb-logo-bg hb-logo-default"></div>
+                                    <div class="hb-card-inner">
+                                        <div class="hb-card-header">
+                                            <span class="hb-name">NeuroFuzz</span>
+                                            <span class="hb-contributors"><i class="ti ti-users"></i> 4</span>
+                                        </div>
+                                        <p class="hb-desc">Fuzzy-neural hybrid inference engine for real-time classification on resource-constrained microcontrollers. Targets STM32 and ESP32. Includes a training pipeline and a model-to-C-array compiler.</p>
+                                        <div class="hb-tags">
+                                            <span class="hb-tag">Neural Networks</span>
+                                            <span class="hb-tag">Fuzzy Logic</span>
+                                            <span class="hb-tag">Embedded</span>
+                                            <span class="hb-tag">MCU</span>
+                                        </div>
+                                        <div class="hb-footer">
+                                            <div class="hb-stack">
+                                                <span class="hb-stack-badge">Python</span>
+                                                <span class="hb-stack-badge">C</span>
+                                                <span class="hb-stack-badge">PyTorch</span>
+                                            </div>
+                                            <a href="#" class="hb-github-link"><i class="ti ti-brand-github"></i> medev</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="content-panel" id="analytics">
@@ -254,13 +340,22 @@
   └────────────────────────────────────┘</pre>
                         <div class="term-content-layer">
                             <h3>Hackathon</h3>
-                            <p>Annual engineering competitions and interdisciplinary student challenges organized by the department.</p>
-                            <ul class="feature-list">
-                                <li>ControlHack — Embedded Systems Sprint</li>
-                                <li>AI &amp; Control Track — Interdisciplinary teams</li>
-                                <li>Prizes: Lab access, research credits, publication</li>
-                                <li>Open to BSc, MSc, and PhD students</li>
-                            </ul>
+                            <div class="hack-upcoming">
+                                <div class="hack-label">// upcoming event</div>
+                                <div class="hack-name">CTRL::HACK &mdash; 01</div>
+                                <div class="hack-theme">"Build a controller for a system that definitely does not need one."</div>
+                                <div class="hack-meta-row">
+                                    <div class="hack-meta-item">Date &nbsp;<span>14–15 Feb 2099</span></div>
+                                    <div class="hack-meta-item">Format &nbsp;<span>48h sprint</span></div>
+                                    <div class="hack-meta-item">Teams &nbsp;<span>2 – 4 members</span></div>
+                                    <div class="hack-meta-item">Venue &nbsp;<span>TU-Sofia, Plovdiv — Lab №4319</span></div>
+                                </div>
+                                <a href="#" class="hack-register-btn"><i class="ti ti-external-link"></i> Register via Google Form</a>
+                            </div>
+                            <div class="hack-past-label">// past events</div>
+                            <div class="hack-past-log">
+                                <span class="log-year">[2025]</span> CTRL::HACK &mdash; 00 &nbsp;&middot;&nbsp; 12 teams &nbsp;&middot;&nbsp; theme: signal from the void &nbsp;&middot;&nbsp; 3 survivors
+                            </div>
                         </div>
                     </div>
                     <div class="content-panel" id="integration">
@@ -281,14 +376,42 @@
             ═══╧╧═══
      ·       *       ★       ·</pre>
                         <div class="term-content-layer">
-                            <h3>Thesis Topics</h3>
-                            <p>Available thesis subjects for BSc and MSc students. Contact Room №4319 to discuss scope and supervision.</p>
-                            <ul class="feature-list">
-                                <li>Adaptive Control of Robotic Manipulators</li>
-                                <li>ML-based Non-linear System Identification</li>
-                                <li>Digital Twin for Industrial PLC Environments</li>
-                                <li>Fault Detection in Closed-loop Control Systems</li>
-                            </ul>
+                            <h3>Research</h3>
+
+                            <div class="research-section-label">// active research areas — click to expand</div>
+                            <div class="research-cards-grid">
+                                <div class="research-card" data-research="kan">
+                                    <span class="research-cat research-cat--ml">Applied ML</span>
+                                    <div class="research-card-title">Kolmogorov Arnold Networks</div>
+                                    <p class="research-card-desc">Interpretable neural architectures for system identification and control.</p>
+                                    <div class="research-card-footer"><span class="research-status-dot"></span><span class="research-status-text">Active</span></div>
+                                </div>
+                                <div class="research-card" data-research="ml-icu">
+                                    <span class="research-cat research-cat--bio">Biomedical · ML</span>
+                                    <div class="research-card-title">ML in Intensive Care</div>
+                                    <p class="research-card-desc">Machine learning for clinical decision support in ICU environments.</p>
+                                    <div class="research-card-footer"><span class="research-status-dot"></span><span class="research-status-text">Active</span></div>
+                                </div>
+                                <div class="research-card" data-research="dt-care">
+                                    <span class="research-cat research-cat--bio">Biomedical · Simulation</span>
+                                    <div class="research-card-title">Digital Twins — Personalised Care</div>
+                                    <p class="research-card-desc">Patient-specific models for treatment simulation and protocol optimisation.</p>
+                                    <div class="research-card-footer"><span class="research-status-dot"></span><span class="research-status-text">Active</span></div>
+                                </div>
+                                <div class="research-card" data-research="autonomous">
+                                    <span class="research-cat research-cat--robotics">Robotics · Control</span>
+                                    <div class="research-card-title">Autonomous Robotics</div>
+                                    <p class="research-card-desc">Full autonomy stacks for platforms in unstructured environments.</p>
+                                    <div class="research-card-footer"><span class="research-status-dot"></span><span class="research-status-text">Active</span></div>
+                                </div>
+                                <div class="research-card" data-research="neuromorphic">
+                                    <span class="research-cat research-cat--hw">Hardware · ML</span>
+                                    <div class="research-card-title">Neuromorphic Architectures</div>
+                                    <p class="research-card-desc">Spike-based computing for embedded control inference at the edge.</p>
+                                    <div class="research-card-footer"><span class="research-status-dot"></span><span class="research-status-text">Active</span></div>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -300,15 +423,17 @@
     <section class="pricing fade-up" id="pricing">
         <div class="pricing-container">
             <div class="section-header"><h2 class="section-title">Ph.D Students</h2></div>
+            <div class="roster-open-wrap">
+                <button class="roster-open-btn" id="rosterOpenBtn">[ OPEN ROSTER ]</button>
+            </div>
             <div class="pricing-grid">
                 <div class="pricing-card" data-profile="petrova">
                     <div class="plan-name">Ralitsa Petrova</div>
                     <div class="plan-period">Engineer, Ph.D &mdash; Researcher</div>
                     <ul class="plan-features">
-                        <li>Working Days: Monday &ndash; Friday</li>
+                        <li><span class="pf-lbl">Working Days</span><span class="pf-val">Monday &ndash; Friday</span></li>
                         <li>Working Hours: 10:00 &ndash; 14:00</li>
-                        <li>Email: r.petrova@tu-plovdiv.bg</li>
-                        <li>Consulting: Office №4319</li>
+                        <li><span class="pf-lbl">Email</span><span class="pf-val">r.petrova@tu-plovdiv.bg</span></li>
                     </ul>
                     <div class="card-proc-footer">
                         <div class="card-proc-bar">
@@ -331,14 +456,13 @@
                     <div class="plan-name">Ivelin Karageorgiev</div>
                     <div class="plan-period">Engineer, Ph.D &mdash; Researcher</div>
                     <ul class="plan-features">
-                        <li>Working Days: Monday &ndash; Friday</li>
+                        <li><span class="pf-lbl">Working Days</span><span class="pf-val">Monday &ndash; Friday</span></li>
                         <li>Working Hours: 10:00 &ndash; 14:00</li>
-                        <li>Email: i.karageorgiev@tu-plovdiv.bg</li>
-                        <li>Consulting: Office №4319</li>
+                        <li><span class="pf-lbl">Email</span><span class="pf-val">i.karageorgiev@tu-plovdiv.bg</span></li>
                     </ul>
                     <div class="card-proc-footer">
                         <div class="card-proc-bar">
-                            <span class="card-status-dot active"></span>
+                            <span class="card-status-dot idle"></span>
                             <span class="card-proc-name">kthread/ctrl:karageorgiev_i@0x4319</span>
                         </div>
                         <div class="card-proc-legend">
@@ -357,15 +481,39 @@
                     <div class="plan-name">Mehmed Medev</div>
                     <div class="plan-period">Engineer, Ph.D &mdash; Assistant</div>
                     <ul class="plan-features">
-                        <li>Working Days: Monday &ndash; Friday</li>
+                        <li><span class="pf-lbl">Working Days</span><span class="pf-val">Monday &ndash; Friday</span></li>
                         <li>Working Hours: By appointment</li>
-                        <li>Email: m.medev@tu-plovdiv.bg</li>
-                        <li>Consulting: Office №4319</li>
+                        <li><span class="pf-lbl">Email</span><span class="pf-val">m.medev@tu-plovdiv.bg</span></li>
                     </ul>
                     <div class="card-proc-footer">
                         <div class="card-proc-bar">
                             <span class="card-status-dot idle"></span>
                             <span class="card-proc-name">kthread/async:medev_m@0x4319</span>
+                        </div>
+                        <div class="card-proc-legend">
+                            <div class="card-legend-row">
+                                <span class="card-legend-dot green"></span>
+                                <span class="card-legend-text">available &mdash; office hours active</span>
+                            </div>
+                            <div class="card-legend-row">
+                                <span class="card-legend-dot amber"></span>
+                                <span class="card-legend-text">on vacation &mdash; async only</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="pricing-card" data-profile="sinapova">
+                    <div class="plan-name">Diana Sinapova</div>
+                    <div class="plan-period">Engineer, Ph.D &mdash; Researcher</div>
+                    <ul class="plan-features">
+                        <li><span class="pf-lbl">Working Days</span><span class="pf-val">Monday &ndash; Friday</span></li>
+                        <li>Working Hours: [TBD]</li>
+                        <li><span class="pf-lbl">Email</span><span class="pf-val">[TBD]</span></li>
+                    </ul>
+                    <div class="card-proc-footer">
+                        <div class="card-proc-bar">
+                            <span class="card-status-dot active"></span>
+                            <span class="card-proc-name">kthread/ctrl:sinapova_d@0x[TBD]</span>
                         </div>
                         <div class="card-proc-legend">
                             <div class="card-legend-row">
@@ -390,26 +538,26 @@
                     <p style="display:none;"><label>Bot Field: <input name="bot-field" /></label></p>
                     <div class="form-group">
                         <label for="name">Name [№]</label>
-                        <input type="text" id="name" name="name" required>
+                        <input type="text" id="name" name="name" required maxlength="100">
                     </div>
                     <div class="form-group">
                         <label for="email">Email</label>
-                        <input type="email" id="email" name="email" required>
+                        <input type="email" id="email" name="email" required maxlength="254">
                     </div>
                     <div class="form-group">
                         <label for="subject">Subject</label>
-                        <input type="text" id="subject" name="subject" required>
+                        <input type="text" id="subject" name="subject" required maxlength="200">
                     </div>
                     <div class="form-group">
                         <label for="message">Message</label>
-                        <textarea id="message" name="message" required></textarea>
+                        <textarea id="message" name="message" required maxlength="2000"></textarea>
                     </div>
                     <button type="submit" class="submit-btn">Send Message</button>
                 </form>
             </div>
             <div class="contact-info">
                 <div class="staff-dir-header">
-                    <h3>Staff Directory</h3>
+                    <h3>Maintenance</h3>
                     <button class="staff-help-btn" id="staffHelpBtn" aria-label="Help">
                         <i class="ti ti-help-circle"></i> Help
                     </button>
@@ -428,13 +576,6 @@
                         <p class="staff-email">i.karageorgiev@tu-plovdiv.bg</p>
                     </div>
                 </div>
-                <div class="info-item">
-                    <div class="info-details">
-                        <h4>Mehmed Medev <span class="staff-dot amber"></span></h4>
-                        <p class="staff-role">Engineer, Ph.D &mdash; Assistant</p>
-                        <p class="staff-email">m.medev@tu-plovdiv.bg</p>
-                    </div>
-                </div>
                 <div class="info-item info-item--location">
                     <div class="info-icon">
                         <i class="ti ti-map-pin"></i>
@@ -445,10 +586,7 @@
                     </div>
                 </div>
                 <div class="map-container">
-                    <div class="map-placeholder">
-                        <p>Interactive Map</p>
-                        <p style="font-size: 0.8rem; margin-top: 5px;">Plovdiv, Sector 7</p>
-                    </div>
+                    <div id="campus-map"></div>
                     <div class="map-overlay"></div>
                 </div>
             </div>
@@ -461,8 +599,382 @@
         </div>
     </footer>
 
+    <!-- Blog Portal Modal -->
+    <div class="blog-portal-overlay" id="blogPortalOverlay" aria-hidden="true"></div>
+    <div class="blog-portal" id="blogPortal" role="dialog" aria-modal="true" aria-label="Blog Portal" aria-hidden="true">
+        <div class="blog-portal-header">
+            <span class="blog-portal-prompt">▶_</span>
+            <span class="blog-portal-title">SIGNAL_CHANNEL://blog.init</span>
+            <button class="blog-portal-close" id="blogPortalClose" aria-label="Close">×</button>
+        </div>
+        <div class="blog-portal-body">
+            <div class="blog-portal-sub">
+                <p class="blog-sub-label">// Subscribe for new publications</p>
+                <div class="blog-sub-form">
+                    <input type="email" id="blogSubEmail" class="blog-sub-input" placeholder="your@email.address" autocomplete="email">
+                    <button class="blog-sub-btn" id="blogSubBtn">SYNC</button>
+                </div>
+                <p class="blog-sub-status" id="blogSubStatus"></p>
+            </div>
+            <div class="blog-portal-divider">──────────────────────────────</div>
+            <a href="blog.html" class="blog-open-link">
+                <span class="blog-open-link-text">OPEN BLOG</span>
+                <span class="blog-open-link-arrow">──────────────────────────────►</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Research Portal -->
+    <div class="rp-overlay" id="rpOverlay" aria-hidden="true"></div>
+    <div class="rp-panel" id="rpPanel" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="rp-header">
+            <span class="rp-cat" id="rpCat"></span>
+            <button class="rp-close" id="rpClose" aria-label="Close">×</button>
+        </div>
+        <div class="rp-body">
+            <div class="rp-title" id="rpTitle"></div>
+            <p class="rp-overview" id="rpOverview"></p>
+            <div class="rp-topics-label">// topics under investigation</div>
+            <ul class="rp-topics" id="rpTopics"></ul>
+        </div>
+    </div>
+
+    <!-- Set to the Cloudflare Tunnel backend URL before deploying (used by the blog portal subscribe form): -->
+    <!-- <script>window.__BLOG_API_URL__ = 'https://api.your-domain.com';</script> -->
     <script src="ControlSystems.js"></script>
     <script src="ui-enhancements.js"></script>
     <script src="grid-fx.js"></script>
+    <script src="homebrew.js"></script>
+    <script>
+    (function () {
+        const DATA = {
+            'kan': {
+                cat: 'Applied ML', catClass: 'research-cat--ml',
+                title: 'Kolmogorov Arnold Networks',
+                overview: 'KANs are a neural architecture grounded in the Kolmogorov-Arnold representation theorem — any multivariate continuous function can be expressed as a superposition of univariate functions. Unlike MLPs which fix activation functions on nodes, KANs place learnable activations on edges, making them more interpretable and often more parameter-efficient for scientific and engineering tasks.',
+                topics: [
+                    'Function approximation for nonlinear system identification',
+                    'Interpretable surrogate models for control synthesis',
+                    'KAN vs MLP benchmarking on engineering datasets',
+                    'Integration with physics-informed learning frameworks',
+                    'Deployment on resource-constrained embedded targets'
+                ]
+            },
+            'ml-icu': {
+                cat: 'Biomedical · ML', catClass: 'research-cat--bio',
+                title: 'ML in Intensive Care',
+                overview: 'Intensive care units generate continuous, high-dimensional physiological data that overwhelm clinical staff. Machine learning offers tools to extract actionable signals — predicting deterioration before it becomes critical, optimising dosing, and identifying patterns invisible to the human eye. The group investigates the reliability, fairness, and clinical deployability of such systems.',
+                topics: [
+                    'Early sepsis and organ failure prediction',
+                    'Ventilator weaning decision support',
+                    'Adaptive drug dosing via reinforcement learning',
+                    'Clinical time-series modelling with transformers',
+                    'Uncertainty quantification for safety-critical predictions'
+                ]
+            },
+            'dt-care': {
+                cat: 'Biomedical · Simulation', catClass: 'research-cat--bio',
+                title: 'Digital Twins — Personalised Care',
+                overview: 'A patient digital twin is a continuously updated computational model mirroring an individual\'s physiological state. By coupling real-time sensor data with mechanistic and data-driven models, clinicians can simulate interventions before applying them — opening a path toward truly personalised medicine and proactive rather than reactive care.',
+                topics: [
+                    'Pharmacokinetic / pharmacodynamic (PK/PD) twin modelling',
+                    'Real-time model updating from wearable sensor streams',
+                    'Treatment protocol simulation and optimisation',
+                    'Integration with hospital ERP and electronic health records',
+                    'Validation frameworks for digital twin fidelity'
+                ]
+            },
+            'autonomous': {
+                cat: 'Robotics · Control', catClass: 'research-cat--robotics',
+                title: 'Autonomous Robotics',
+                overview: 'Full autonomy requires a closed loop from perception to action — a robot must sense its environment, build a model of it, plan a course of action, and execute that plan robustly under uncertainty. The group studies each layer of this stack, with particular interest in how classical control theory can anchor and stabilise learned behaviours.',
+                topics: [
+                    'Simultaneous localisation and mapping (SLAM)',
+                    'Motion planning in dynamic and cluttered environments',
+                    'Learning-based perception with safety guarantees',
+                    'Multi-agent coordination and task allocation',
+                    'Hardware-in-the-loop testing with ROS2 and STM32'
+                ]
+            },
+            'neuromorphic': {
+                cat: 'Hardware · ML', catClass: 'research-cat--hw',
+                title: 'Neuromorphic Architectures',
+                overview: 'Biological brains perform remarkable inference at milliwatt power levels. Neuromorphic computing replicates this efficiency using spike-based processing — information encoded in the timing of discrete events rather than continuous values. For embedded control systems this offers a path to ultra-low-latency, energy-efficient inference at the edge.',
+                topics: [
+                    'Spiking neural networks (SNNs) for temporal pattern recognition',
+                    'Spike-timing dependent plasticity (STDP) learning rules',
+                    'Mapping control policies to neuromorphic hardware (Intel Loihi)',
+                    'Energy efficiency vs conventional MCU inference benchmarking',
+                    'Hybrid architectures combining SNNs with classical controllers'
+                ]
+            }
+        };
+
+        const overlay = document.getElementById('rpOverlay');
+        const panel   = document.getElementById('rpPanel');
+        const catEl   = document.getElementById('rpCat');
+        const titleEl = document.getElementById('rpTitle');
+        const overEl  = document.getElementById('rpOverview');
+        const topicsEl= document.getElementById('rpTopics');
+        const closeBtn= document.getElementById('rpClose');
+
+        function openPortal(id) {
+            const d = DATA[id];
+            if (!d) return;
+            catEl.textContent = d.cat;
+            catEl.className   = 'rp-cat ' + d.catClass;
+            titleEl.textContent = d.title;
+            overEl.textContent  = d.overview;
+            topicsEl.innerHTML  = d.topics.map(t => `<li>${t}</li>`).join('');
+            overlay.setAttribute('aria-hidden', 'false');
+            panel.setAttribute('aria-hidden', 'false');
+            overlay.classList.add('rp-visible');
+            panel.classList.add('rp-visible');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closePortal() {
+            overlay.classList.remove('rp-visible');
+            panel.classList.remove('rp-visible');
+            overlay.setAttribute('aria-hidden', 'true');
+            panel.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+        }
+
+        document.querySelectorAll('.research-card[data-research]').forEach(card => {
+            card.addEventListener('click', () => openPortal(card.dataset.research));
+        });
+
+        closeBtn.addEventListener('click', closePortal);
+        overlay.addEventListener('click', closePortal);
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closePortal(); });
+    })();
+    </script>
+    <script>
+    (function () {
+        /* ── Domain hover panel ──────────────────────────────────────────── */
+        const DOMAIN_DATA = {
+            'control-theory': {
+                title: 'Control Theory',
+                desc: 'Control theory underpins all engineered dynamical systems — the mathematical framework for specifying desired behaviour and designing controllers that enforce it under uncertainty, disturbances, and parameter variation. From classical PID synthesis to modern H∞ robust control and MPC, the field spans linear, nonlinear, and adaptive domains.',
+                ascii:
+`     ┌────────┐      ┌──────────┐
+  r ─┤  C(s)  ├─────►│  Plant   ├─► y
+     └────────┘      └────┬─────┘
+          ▲               │
+          └───────────────┘
+              feedback`,
+                topics: ['Adaptive & self-tuning controllers', 'Optimal control — LQR · H∞ · MPC', 'Plant modelling & system identification', 'Stability — Lyapunov · Bode · Nyquist', 'Nonlinear control & feedback linearisation']
+            },
+            'robotics': {
+                title: 'Robotics',
+                desc: 'Modern robotics integrates perception, planning, and control into a unified autonomy stack. Robots must localise in unknown environments, build maps from sensor data, plan collision-free paths, and execute those plans under actuation imperfection — in real time. Collaborative systems extend this to multi-robot coordination and human-robot interaction.',
+                ascii:
+`  ┌──────┐   ┌──────┐   ┌──────┐
+  │  MAP │   │ PLAN │   │ CTRL │
+  └──┬───┘   └──┬───┘   └──┬───┘
+     └──────────┴───────────┘
+             ROS2 NODE
+         SLAM · PATH · ACT`,
+                topics: ['Simultaneous Localisation and Mapping (SLAM)', 'ROS2 architecture and node graphs', 'Forward / inverse kinematics and Jacobian methods', 'Autonomous navigation in unstructured environments', 'Collaborative robots (cobots) and task allocation']
+            },
+            'computer-science': {
+                title: 'Computer Science',
+                desc: 'Systems engineering in software spans the entire stack from bare-metal firmware to distributed backends. It requires understanding how hardware abstractions layer into OS primitives, how primitives enable reliable services, and how to design architectures that are correct, efficient, and maintainable under the constraints of real deployments.',
+                ascii:
+`  ┌───────────────────────┐
+  │   Application Layer   │
+  ├───────────────────────┤
+  │  OS · RTOS · syscall  │
+  ├───────────────────────┤
+  │  Firmware · HAL · ABI │
+  └───────────────────────┘`,
+                topics: ['Bare-metal C/C++ and firmware development', 'RTOS internals — FreeRTOS · Zephyr', 'Backend API design and service architecture', 'Systems programming — memory models, ABI, syscalls', 'Performance profiling and real-time constraints']
+            },
+            'symbolic-ai': {
+                title: 'Symbolic AI',
+                desc: 'Symbolic AI operates on explicit representations of knowledge — formal structures that can be inspected, reasoned over, and explained. Rule-based expert systems, description logic, and semantic web technologies encode domain expertise in a form machines can query and formally infer from, offering consistency guarantees and support for formal verification.',
+                ascii:
+`  [Entity]──type──►[Class]
+       │                │
+  has_value       subClassOf
+       ▼                ▼
+  [Value]       [Superclass]
+   RDF: {subject, predicate, object}`,
+                topics: ['Ontologies and description logic — OWL · RDF · SPARQL', 'Expert systems and production rule engines', 'Constraint satisfaction and logic programming', 'Knowledge representation and automated reasoning', 'Semantic web technologies and linked data']
+            },
+            'subsymbolic-ai': {
+                title: 'Sub-Symbolic AI',
+                desc: 'Sub-symbolic AI discovers structure from data rather than encoding it explicitly. Neural networks approximate functions from examples; fuzzy inference handles imprecise linguistic rules; evolutionary algorithms optimise by simulating natural selection — powerful where rules are unknown, data is noisy, or the search space is intractable.',
+                ascii:
+`  x₁ ──┐
+  x₂ ──┤ W ──► σ(Wx+b) ──► ŷ
+  x₃ ──┘
+  ∇L = ∂L/∂W  ← backprop
+  IF x is HIGH THEN y is LOW`,
+                topics: ['Deep learning — CNNs · RNNs · Transformers · KANs', 'Reinforcement learning and policy optimisation', 'Fuzzy inference systems and neuro-fuzzy hybrids', 'Evolutionary algorithms — GA · GP · DE · PSO', 'Uncertainty quantification in learned models']
+            },
+            'data-science': {
+                title: 'Data Science',
+                desc: 'Data science extracts meaning from empirical observations through rigorous statistical methodology. From exploratory analysis to causal inference and model selection, the discipline builds predictive and explanatory models. Close contact with probability theory and Bayesian reasoning distinguishes scientific data work from ad-hoc pattern matching.',
+                ascii:
+`  X ~ N(μ, σ²)
+  ──────────────────────────
+  EDA → outliers → skew
+  corr(X, Y) → causality?
+  ARIMA / SSM → forecast
+  p-value: 0.0032  **`,
+                topics: ['Exploratory data analysis and data quality assessment', 'Feature engineering and dimensionality reduction', 'Causal inference and structural equation models', 'Time-series — ARIMA · SSM · spectral methods', 'Anomaly detection and statistical process control']
+            },
+            'digital-twins': {
+                title: 'Digital Twins',
+                desc: 'A digital twin is a living virtual replica of a physical asset, updated continuously from real sensor data. IBM defines digital twins as virtual representations that span the full lifecycle of a product or system — integrating IoT streams, physics-based models, and data-driven refinement to enable simulation, optimisation, and prediction without disrupting the physical system.',
+                ascii:
+`  [Physical Plant]
+       │ ← sensor stream
+  [State Estimator]
+       │ ── synchronise
+  [DT Model] ─► [Simulation]
+              ─► [Prediction]`,
+                topics: ['Real-time state estimation and sensor fusion', 'Physics-informed neural networks (PINNs)', 'IoT data ingestion and twin synchronisation', 'Simulation-based testing and virtual commissioning', 'IBM Watson IoT and Digital Twin Exchange frameworks']
+            },
+            'erp-irp': {
+                title: 'ERP / IRP',
+                desc: 'IBM defines the Intelligent Resource Planning (IRP) system as an evolution of ERP that infuses AI, analytics, and automation into enterprise resource management. Where traditional ERP records transactions, IRP anticipates demand, optimises resource allocation in real time, and connects operational technology (OT) with information technology (IT) across the full production stack.',
+                ascii:
+`  ┌──────┐  ┌───────┐  ┌────┐
+  │ SCM  │  │  MFG  │  │ QA │
+  └──┬───┘  └──┬────┘  └──┬─┘
+     └─────────┼───────────┘
+               ▼
+       ┌──────────────┐
+       │   IRP Hub    │
+       │  AI · OT/IT  │
+       └──────────────┘`,
+                topics: ['IBM IRP architecture and AI-driven resource planning', 'OT/IT convergence and industrial IoT integration', 'Supply chain optimisation and demand forecasting', 'MES (Manufacturing Execution System) integration', 'Real-time process orchestration and workflow automation']
+            },
+            'industrial-engineering': {
+                title: 'Industrial Engineering',
+                desc: 'Industrial engineering analyses, designs, and optimises complex production systems at the intersection of people, machines, materials, and energy. In the Industry 5.0 paradigm — as defined by the European Commission — the focus shifts from pure automation to resilient, human-centric, sustainable production. The engineer\'s role becomes analytical and predictive: modelling the industrial future before it arrives.',
+                ascii:
+`  2020──── 2025 ──── 2030 ──► ?
+  Ind4.0  │ Ind5.0 transition
+          │ HRC · sustainable
+  ────────┼────────────────────
+  FMEA    │ forecast · simulate
+  queuing │ optimise · predict`,
+                topics: ['Industry 5.0 — resilient and sustainable manufacturing', 'Human-robot collaboration (HRC) and ergonomics', 'Predictive maintenance and failure mode analysis (FMEA)', 'Operations research — queuing · scheduling · optimisation', 'Technology forecasting and future systems analysis']
+            }
+        };
+
+        const panel = document.createElement('div');
+        panel.id = 'domainHoverPanel';
+        panel.className = 'domain-hover-panel';
+        panel.innerHTML = '<pre class="dhp-ascii"></pre><div class="dhp-content"><div class="dhp-title"></div><p class="dhp-desc"></p><ul class="dhp-topics"></ul></div>';
+        document.body.appendChild(panel);
+
+        const panelAscii  = panel.querySelector('.dhp-ascii');
+        const panelTitle  = panel.querySelector('.dhp-title');
+        const panelDesc   = panel.querySelector('.dhp-desc');
+        const panelTopics = panel.querySelector('.dhp-topics');
+
+        let hideTimeout = null;
+
+        function showPanel(card, data) {
+            clearTimeout(hideTimeout);
+            panelAscii.textContent  = data.ascii;
+            panelTitle.textContent  = data.title;
+            panelDesc.textContent   = data.desc;
+            panelTopics.innerHTML   = data.topics.map(t => '<li>' + t + '</li>').join('');
+
+            const rect = card.getBoundingClientRect();
+            const W    = 318;
+            let left   = rect.right + 14;
+            if (left + W > window.innerWidth - 8) left = rect.left - W - 14;
+            if (left < 8) left = 8;
+            const H  = panel.offsetHeight || 320;
+            let top  = rect.top;
+            if (top + H > window.innerHeight - 8) top = window.innerHeight - H - 8;
+            if (top < 8) top = 8;
+            panel.style.top  = top + 'px';
+            panel.style.left = left + 'px';
+            panel.classList.add('dhp-visible');
+        }
+
+        function hidePanel() {
+            hideTimeout = setTimeout(function () { panel.classList.remove('dhp-visible'); }, 80);
+        }
+
+        document.querySelectorAll('.domain-card[data-domain]').forEach(function (card) {
+            var data = DOMAIN_DATA[card.dataset.domain];
+            if (!data) return;
+            card.addEventListener('mouseenter', function () { showPanel(card, data); });
+            card.addEventListener('mouseleave', hidePanel);
+        });
+
+        panel.addEventListener('mouseenter', function () { clearTimeout(hideTimeout); });
+        panel.addEventListener('mouseleave', hidePanel);
+
+        /* ── Open Roster button ─────────────────────────────────────────── */
+        var rosterBtn   = document.getElementById('rosterOpenBtn');
+        var pricingGrid = document.querySelector('.pricing-grid');
+
+        if (rosterBtn && pricingGrid) {
+            pricingGrid.classList.add('roster-sealed');
+
+            rosterBtn.addEventListener('click', function () {
+                if (this.classList.contains('roster-active')) return;
+                this.classList.add('roster-active');
+                this.textContent = '[ ROSTER ACTIVE ]';
+
+                var container = document.getElementById('pricing');
+                container.style.position = 'relative';
+                var sweep = document.createElement('div');
+                sweep.className = 'pricing-scan-line';
+                container.appendChild(sweep);
+                setTimeout(function () { sweep.remove(); }, 900);
+
+                pricingGrid.classList.remove('roster-sealed');
+                var cards = pricingGrid.querySelectorAll('.pricing-card');
+                cards.forEach(function (card, i) {
+                    setTimeout(function () { card.classList.add('roster-revealed'); }, 150 * i + 180);
+                });
+            });
+        }
+    })();
+    </script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
+    <script>
+    (function () {
+        var LAT = 42.13813, LNG = 24.74912;
+        var map = L.map('campus-map', {
+            center: [LAT, LNG],
+            zoom: 17,
+            scrollWheelZoom: false
+        });
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '',
+            subdomains: 'abcd',
+            maxZoom: 19
+        }).addTo(map);
+        var pin = L.divIcon({
+            html: '<div style="width:12px;height:12px;background:#00ffff;border:2px solid #fff;border-radius:50%;box-shadow:0 0 10px #00ffff,0 0 4px #00ffff;"></div>',
+            iconSize: [12, 12],
+            iconAnchor: [6, 6],
+            popupAnchor: [0, -12],
+            className: ''
+        });
+        L.marker([LAT, LNG], { icon: pin })
+            .addTo(map)
+            .bindPopup(
+                '<strong style="color:#00ffff;letter-spacing:1px;">TU-Sofia, Plovdiv Branch</strong><br>' +
+                'Office №4319<br>' +
+                '<span style="opacity:0.7;font-style:italic;">Across the Robotics Club</span><br><br>' +
+                '<a href="https://maps.google.com/?q=' + LAT + ',' + LNG + '" target="_blank" rel="noopener">&#x1F4CD; Open in Google Maps</a>'
+            )
+            .openPopup();
+    })();
+    </script>
 </body>
 </html>

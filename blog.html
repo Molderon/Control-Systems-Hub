@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog — Control Systems / TU-Sofia Plovdiv</title>
+    <link href="css/variables.css" rel="stylesheet">
+    <link href="ControlSystems.css" rel="stylesheet">
+    <link href="css/features.css" rel="stylesheet">
+    <link href="blog.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.34.0/dist/tabler-icons.min.css"
+          integrity="sha384-8zE3cHqgn3iJlsilASXr1IcXFP7TnplbXZSbvKuaUYjPUpcK7QhlyLE/cY7lIBTp" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js"
+            integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous"></script>
+    <!-- Set your Cloudflare Tunnel URL here once the tunnel is running -->
+    <script>window.__BLOG_API_URL__ = '';</script>
+</head>
+<body id="top">
+    <!-- Background effects (shared with main site) -->
+    <div class="cyber-bg" aria-hidden="true">
+        <div class="cyber-gradient"></div>
+        <div class="matrix-rain" id="matrixRain"></div>
+    </div>
+    <div class="particles" id="particlesContainer" aria-hidden="true"></div>
+    <div class="data-streams" id="dataStreams" aria-hidden="true"></div>
+    <div class="orb orb1" aria-hidden="true"></div>
+    <div class="orb orb2" aria-hidden="true"></div>
+    <div class="orb orb3" aria-hidden="true"></div>
+    <div class="grid-overlay" aria-hidden="true">
+        <div class="grid-lines"></div>
+        <div class="grid-glow"></div>
+        <canvas id="grid-canvas" aria-hidden="true"></canvas>
+    </div>
+    <div class="scanlines" aria-hidden="true"></div>
+    <div class="noise-overlay" aria-hidden="true"></div>
+
+    <nav>
+        <div class="nav-container">
+            <a href="index.html" class="logo">./ControlSystems.sh</a>
+            <ul class="nav-links">
+                <li><a href="index.html#pricing">Contacts</a></li>
+                <li><a href="index.html#contact">Message us</a></li>
+                <li><a href="index.html#features">Contents</a></li>
+            </ul>
+            <div class="nav-bottom">
+                <span class="nav-blog-badge">BLOG</span>
+                <a href="irc.html" class="cyber-button">
+                    <span class="btn-content">IRC Room</span>
+                    <span class="btn-glitch"></span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="blog-main">
+
+        <!-- Post List View -->
+        <section class="blog-list-section" id="blogListSection">
+            <div class="blog-list-container">
+                <div class="blog-header">
+                    <div class="blog-header-bar">
+                        <span class="blog-header-prompt">▶_</span>
+                        <span class="blog-header-title">SIGNAL_CHANNEL://publications</span>
+                        <span class="blog-header-blink">█</span>
+                    </div>
+                    <h1 class="blog-title">Publications</h1>
+                    <p class="blog-subtitle">Technical solutions, research notes, and field reports.</p>
+                </div>
+
+                <div class="blog-status-bar" id="blogStatusBar">
+                    <span id="blogStatusText">CONNECTING TO BACKEND…</span>
+                </div>
+
+                <div class="blog-grid" id="blogGrid">
+                    <!-- Post cards injected by blog.js -->
+                    <div class="blog-skeleton" aria-hidden="true"></div>
+                    <div class="blog-skeleton" aria-hidden="true"></div>
+                    <div class="blog-skeleton" aria-hidden="true"></div>
+                </div>
+
+                <div class="blog-empty" id="blogEmpty" hidden>
+                    <pre class="blog-empty-art" aria-hidden="true">
+  ┌──────────────────────────────┐
+  │  &gt; ls ./posts/               │
+  │  total 0                     │
+  │  &gt; _                         │
+  └──────────────────────────────┘</pre>
+                    <p>No publications yet. Check back soon.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Post Detail View -->
+        <section class="blog-detail-section" id="blogDetailSection" hidden>
+            <div class="blog-detail-container">
+                <button class="blog-back-btn" id="blogBackBtn">
+                    <i class="ti ti-arrow-left"></i> Back to Publications
+                </button>
+
+                <article class="blog-article" id="blogArticle">
+                    <div class="blog-article-header">
+                        <div class="blog-article-meta" id="blogArticleMeta"></div>
+                        <h1 class="blog-article-title" id="blogArticleTitle"></h1>
+                    </div>
+                    <div class="blog-article-body" id="blogArticleBody"></div>
+                    <div class="blog-article-attachments" id="blogArticleAttachments" hidden></div>
+                </article>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2026 Technical University of Sofia, branch Plovdiv. | All rights reserved (mostly).</p>
+        </div>
+    </footer>
+
+    <script src="ControlSystems.js"></script>
+    <script src="grid-fx.js"></script>
+    <script src="blog.js"></script>
+</body>
+</html>

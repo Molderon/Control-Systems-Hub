@@ -1,0 +1,27 @@
+[build]
+  publish   = "."
+  functions = "Netlify/Functions"
+
+[functions]
+  # transmit.js uses native fetch — requires Node.js 18+
+  node_bundler = "esbuild"
+
+[context.production.environment]
+  NODE_VERSION = "18"
+
+# Block direct HTTP access to backend source files served as static assets.
+# The backend runs on the self-hosted machine, not on Netlify.
+[[redirects]]
+  from   = "/backend/*"
+  to     = "/404.html"
+  status = 404
+
+[[redirects]]
+  from   = "/tests/*"
+  to     = "/404.html"
+  status = 404
+
+[[redirects]]
+  from   = "/Backend system/*"
+  to     = "/404.html"
+  status = 404

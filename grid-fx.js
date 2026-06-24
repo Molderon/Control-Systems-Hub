@@ -10,7 +10,8 @@
     const gridLinesEl = document.querySelector('.grid-lines');
     const gridGlowEl  = document.querySelector('.grid-glow');
 
-    let W, H, t = 0, modeT = 0, modeIdx = 0, lastTs = 0, lastDt = 0.016;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let W, H, t = 0, modeT = 0, modeIdx = 0, lastTs = 0, lastDt = 0.016, rafId = null, started = false;
 
     /* New mode state */
     let golGrid = null, golNextGrid = null, golCols = 0, golRows = 0, golTick = 0;
@@ -658,51 +659,55 @@
             }));
         });
 
-        // Forward pass wave: cycles every 3.5s
+        // Forward pass: smooth wave front sweeps left\u2192right, cycles every 3.5s
         const passPhase = (modeT % 3.5) / 3.5;
-        const activeLayer = Math.floor(passPhase * (LAYERS.length + 1));
+        const wavePos = passPhase * LAYERS.length; // 0 \u2192 LAYERS.length
 
-        // Connections
+        // Connections \u2014 baseline alpha keeps topology always readable; wave brightens on pass
         for (let li = 0; li < LAYERS.length - 1; li++) {
+            const dist = Math.abs(wavePos - (li + 0.5));
+            const wavePulse = Math.max(0, 1 - dist / 0.7);
+
             nodes[li].forEach(a => {
                 nodes[li+1].forEach(b => {
                     const w = Math.abs(Math.sin((a.y + b.y) * 0.027 + li * 1.4));
-                    const alpha = (li < activeLayer) ? w * 0.24 : 0.06;
+                    const alpha = 0.13 + wavePulse * w * 0.45;
                     ctx.strokeStyle = w > 0.5 ? ac(alpha) : ac2(alpha * 0.7);
-                    ctx.lineWidth = 0.7;
+                    ctx.lineWidth = 0.7 + wavePulse * 0.5;
                     ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
                 });
             });
         }
 
-        // Neurons
+        // Neurons \u2014 smooth glow follows wave front
         nodes.forEach((layer, li) => {
+            const layerPulse = Math.max(0, 1 - Math.abs(wavePos - li) / 1.1);
+
             layer.forEach((n, ni) => {
                 const act = Math.sin(t * (1.2 + ni * 0.3) + li * 1.1) * 0.5 + 0.5;
-                const isActive = li <= activeLayer;
                 const r = li === 0 ? 6 : li === LAYERS.length - 1 ? 8 : 5;
                 const col = li === LAYERS.length - 1 ? ac2 : ac;
 
-                if (isActive) {
+                if (layerPulse > 0.04) {
                     const g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, r * 3.5);
-                    g.addColorStop(0, col(act * 0.18));
+                    g.addColorStop(0, col(layerPulse * act * 0.22));
                     g.addColorStop(1, col(0));
                     ctx.fillStyle = g;
                     ctx.beginPath(); ctx.arc(n.x, n.y, r * 3.5, 0, Math.PI*2); ctx.fill();
                 }
 
-                ctx.strokeStyle = isActive ? col(0.42 + act * 0.38) : wh(0.14);
+                ctx.strokeStyle = layerPulse > 0.1 ? col(0.35 + layerPulse * act * 0.42) : wh(0.18);
                 ctx.lineWidth = 1.2;
                 ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI*2); ctx.stroke();
 
-                if (isActive) {
-                    ctx.fillStyle = col(act * 0.15);
+                if (layerPulse > 0.04) {
+                    ctx.fillStyle = col(layerPulse * act * 0.16);
                     ctx.fill();
                 }
             });
 
             // Layer label
-            ctx.fillStyle = ac(0.20); ctx.font = '700 7px "JetBrains Mono",monospace'; ctx.textAlign = 'center';
+            ctx.fillStyle = ac(0.22); ctx.font = '700 7px "JetBrains Mono",monospace'; ctx.textAlign = 'center';
             ctx.fillText(LNAMES[li], layer[0].x, NY - 10);
         });
 
@@ -713,7 +718,7 @@
 
         // Live stats at bottom
         if (modeT > 2.0) {
-            const epoch = Math.min(40, Math.floor((modeT / MODE_DURATION) * 40));
+            const epoch = Math.min(40, Math.floor((modeT / currentModeDuration) * 40));
             const loss  = (2.3 * Math.exp(-0.09 * epoch) + 0.18).toFixed(3);
             const acc   = Math.min(93, Math.round((1 - Math.exp(-0.12 * epoch)) * 100));
             ctx.font = '700 8px "JetBrains Mono",monospace'; ctx.textAlign = 'left';
@@ -1997,7 +2002,12 @@
 
     /* ── Render loop ────────────────────────────────────────────────────────── */
     function resize() {
-        W=canvas.width=window.innerWidth; H=canvas.height=window.innerHeight;
+        W = window.innerWidth;
+        H = window.innerHeight;
+        canvas.width        = W * dpr;
+        canvas.height       = H * dpr;
+        canvas.style.width  = W + 'px';
+        canvas.style.height = H + 'px';
         topoNodes=null; gdPaths=null; kalmanMeas=null; svcPkt=[];
         golGrid=null;
         sierpPt=null;
@@ -2014,34 +2024,46 @@
             modeT=0;
             if (!restPhase) {
                 restPhase=true;
-                restDuration=5+Math.random()*10;   // 5–15 s interval
-                setCSSGridVisible(true);            // restore CSS grid during rest
+                restDuration=5+Math.random()*10;
+                setCSSGridVisible(true);
             } else {
                 restPhase=false;
-                currentModeDuration=20+Math.random()*280;   // 20 s – 5 min
+                currentModeDuration=20+Math.random()*280;
                 modeIdx=pickNextMode();
-                setCSSGridVisible(modeIdx !== HEX_IDX); // hide CSS grid under hex mode
+                setCSSGridVisible(modeIdx !== HEX_IDX);
                 topoNodes=null; gdPaths=null; kalmanMeas=null; svcPkt=[];
                 golGrid=null;
                 sierpPt=null;
             }
         }
 
-        ctx.clearRect(0,0,W,H);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, W, H);
         if (!restPhase) {
             ctx.save(); ctx.globalAlpha=eio(Math.min(1,modeT/FADE))*eio(Math.min(1,(currentModeDuration-modeT)/FADE))*DIM;
             MODES[modeIdx](t, modeT);
             ctx.restore();
             ctx.save(); drawModeLabel(modeT, modeIdx); ctx.restore();
         }
-        requestAnimationFrame(frame);
+        rafId = requestAnimationFrame(frame);
     }
+
+    document.addEventListener('visibilitychange', () => {
+        if (!started) return;
+        if (document.hidden) {
+            cancelAnimationFrame(rafId);
+            rafId = null;
+        } else if (rafId === null) {
+            rafId = requestAnimationFrame(ts => { lastTs = ts; rafId = requestAnimationFrame(frame); });
+        }
+    });
 
     window.addEventListener('resize', resize);
     modeIdx = pickNextMode(); // random first mode on every page load
     resize();
     // 8-second startup delay before canvas animations begin
     setTimeout(() => {
-        requestAnimationFrame(ts => { lastTs=ts; requestAnimationFrame(frame); });
+        started = true;
+        rafId = requestAnimationFrame(ts => { lastTs = ts; rafId = requestAnimationFrame(frame); });
     }, 8000);
 }());

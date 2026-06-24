@@ -4,121 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>About — Control Systems, TU-Sofia Plovdiv</title>
+    <link href="css/variables.css" rel="stylesheet">
     <link href="ControlSystems.css" rel="stylesheet">
     <style>
-        .blog-container {
-            max-width: 780px;
+        .about-container {
+            max-width: 800px;
             margin: 0 auto;
-            padding: 120px 24px 80px;
-        }
-
-        .blog-header {
-            margin-bottom: 56px;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 32px;
-        }
-
-        .blog-header .page-label {
-            font-size: 0.65rem;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            color: var(--primary-cyan);
-            margin-bottom: 12px;
-            display: block;
-        }
-
-        .blog-header h1 {
-            font-size: clamp(2rem, 5vw, 3.2rem);
-            font-weight: 900;
-            line-height: 1.1;
-            background: linear-gradient(135deg, var(--primary-cyan), var(--primary-pink));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 16px;
-        }
-
-        .blog-header .blog-tagline {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            line-height: 1.7;
-        }
-
-        .post {
-            margin-bottom: 52px;
-            padding-bottom: 52px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .post:last-child {
-            border-bottom: none;
-        }
-
-        .post-meta {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 14px;
-            flex-wrap: wrap;
-        }
-
-        .post-date {
-            font-size: 0.62rem;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: var(--text-secondary);
-        }
-
-        .post-tag {
-            font-size: 0.58rem;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            color: var(--primary-cyan);
-            border: 1px solid var(--border-color);
-            padding: 2px 8px;
-        }
-
-        .post h2 {
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 14px;
-            line-height: 1.3;
-        }
-
-        .post h2 a {
-            color: inherit;
-            text-decoration: none;
-            transition: color 0.2s;
-        }
-
-        .post h2 a:hover {
-            color: var(--primary-cyan);
-        }
-
-        .post p {
-            color: var(--text-secondary);
-            line-height: 1.85;
-            font-size: 0.92rem;
-            margin-bottom: 14px;
-        }
-
-        .post p + p {
-            margin-top: 0;
-        }
-
-        .post .read-more {
-            font-size: 0.68rem;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: var(--primary-cyan);
-            text-decoration: none;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 2px;
-            transition: border-color 0.2s;
-        }
-
-        .post .read-more:hover {
-            border-color: var(--primary-cyan);
+            padding: 120px 24px 90px;
         }
 
         .back-link {
@@ -130,21 +22,251 @@
             text-transform: uppercase;
             color: var(--text-secondary);
             text-decoration: none;
-            margin-bottom: 40px;
+            margin-bottom: 48px;
             transition: color 0.2s;
         }
-
-        .back-link:hover { color: var(--primary-cyan); }
         .back-link::before { content: '←'; }
+        .back-link:hover   { color: var(--primary-cyan); }
 
-        .blog-footer-note {
-            font-size: 0.65rem;
-            color: var(--text-secondary);
-            letter-spacing: 1px;
-            text-align: center;
-            padding-top: 40px;
-            opacity: 0.6;
+        /* ── Section wrapper ─────────────────────────────────────────────── */
+        .about-section {
+            margin-bottom: 64px;
+            padding-bottom: 64px;
+            border-bottom: 1px solid var(--border-color);
         }
+
+        .about-section:last-of-type {
+            border-bottom: none;
+        }
+
+        .section-label {
+            font-size: 0.62rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--primary-cyan);
+            font-family: 'Courier New', Courier, monospace;
+            display: block;
+            margin-bottom: 14px;
+        }
+
+        .section-title {
+            font-size: clamp(1.6rem, 4vw, 2.4rem);
+            font-weight: 900;
+            line-height: 1.15;
+            background: linear-gradient(135deg, var(--primary-cyan), var(--primary-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 28px;
+        }
+
+        /* ── Purpose prose ───────────────────────────────────────────────── */
+        .about-lead {
+            font-size: 1.05rem;
+            line-height: 1.85;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            font-weight: 400;
+        }
+
+        .about-body {
+            font-size: 0.90rem;
+            line-height: 1.90;
+            color: var(--text-secondary);
+            margin-bottom: 18px;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin: 24px 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 14px;
+        }
+
+        .feature-list li {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            line-height: 1.6;
+            clip-path: polygon(8px 0%, 100% 0%, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0% 100%, 0% 8px);
+        }
+
+        .feature-list li::before {
+            content: '▸ ';
+            color: var(--primary-cyan);
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        /* ── Manifest / Internals block ──────────────────────────────────── */
+        .manifest-header {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.70rem;
+            color: var(--primary-cyan);
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .manifest-header::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-color);
+        }
+
+        .manifest-block {
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid var(--border-color);
+            padding: 28px 32px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.76rem;
+            line-height: 1.8;
+            color: var(--text-secondary);
+            overflow-x: auto;
+            clip-path: polygon(18px 0%, 100% 0%, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0% 100%, 0% 18px);
+        }
+
+        .manifest-block::-webkit-scrollbar       { height: 3px; }
+        .manifest-block::-webkit-scrollbar-track { background: transparent; }
+        .manifest-block::-webkit-scrollbar-thumb { background: rgba(0,255,255,0.2); }
+
+        .m-key   { color: var(--primary-cyan); }
+        .m-val   { color: #a8d8a8; }
+        .m-str   { color: var(--primary-pink); }
+        .m-note  { color: rgba(255,255,255,0.28); font-style: italic; }
+        .m-arr   { color: var(--text-secondary); }
+        .m-brace { color: rgba(255,255,255,0.45); }
+
+        .manifest-group {
+            margin: 10px 0 10px 0;
+        }
+
+        .manifest-group + .manifest-group {
+            border-top: 1px solid rgba(255,255,255,0.06);
+            padding-top: 10px;
+        }
+
+        .about-footer-note {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.58rem;
+            color: var(--text-secondary);
+            letter-spacing: 2px;
+            text-align: center;
+            padding-top: 48px;
+            opacity: 0.5;
+            text-transform: uppercase;
+        }
+
+        /* ── GitHub README style ──────────────────────────────────────────── */
+        .readme-title {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 14px;
+        }
+
+        .readme-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 22px;
+            padding-bottom: 18px;
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+        }
+
+        .rb {
+            display: inline-flex;
+            align-items: center;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.60rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            padding: 3px 9px;
+            border-radius: 2px;
+            white-space: nowrap;
+        }
+
+        .rb-html    { background: #e34c26; color: #fff; }
+        .rb-css     { background: #264de4; color: #fff; }
+        .rb-js      { background: #f7df1e; color: #222; }
+        .rb-node    { background: #3a7d44; color: #fff; }
+        .rb-sqlite  { background: #003a52; color: #7bb7d0; border: 1px solid #0074a6; }
+        .rb-ergo    { background: #5b21b6; color: #e0d0ff; }
+        .rb-nixos   { background: #4e6d98; color: #d3e4ff; }
+        .rb-netlify { background: #00c7b7; color: #003333; }
+        .rb-cf      { background: #f48120; color: #fff; }
+        .rb-oss     { background: transparent; color: rgba(0,255,255,0.75); border: 1px solid rgba(0,255,255,0.35); }
+
+        .readme-h2 {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.80rem;
+            font-weight: 700;
+            color: var(--primary-cyan);
+            letter-spacing: 2px;
+            margin: 20px 0 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.18);
+        }
+
+        .readme-h2::before { content: '## '; opacity: 0.35; }
+
+        .readme-ul {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 8px;
+        }
+
+        .readme-ul li {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+            padding: 3px 0 3px 18px;
+            position: relative;
+            line-height: 1.65;
+        }
+
+        .readme-ul li::before {
+            content: '-';
+            position: absolute;
+            left: 6px;
+            color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.5);
+        }
+
+        .rl-key  { color: var(--primary-cyan); }
+        .rl-note { color: rgba(255,255,255,0.28); font-style: italic; }
+
+        .readme-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.68rem;
+            margin-bottom: 8px;
+        }
+
+        .readme-table th {
+            text-align: left;
+            padding: 5px 12px;
+            background: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.07);
+            color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.65);
+            font-size: 0.55rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.18);
+        }
+
+        .readme-table td {
+            padding: 5px 12px;
+            color: var(--text-secondary);
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            vertical-align: top;
+        }
+
+        .readme-table td:first-child { color: var(--primary-cyan); }
     </style>
 </head>
 <body id="top">
@@ -172,71 +294,126 @@
         </div>
     </nav>
 
-    <main class="blog-container">
+    <main class="about-container">
         <a href="index.html" class="back-link">Back to main</a>
 
-        <header class="blog-header">
-            <span class="page-label">// DEPARTMENT.LOG</span>
-            <h1>About the Department</h1>
-            <p class="blog-tagline">Research notes, announcements, and dispatches from the Control Systems department at the Technical University of Sofia, Plovdiv Branch.</p>
-        </header>
+        <!-- ── Section A: Purpose ─────────────────────────────────────── -->
+        <section class="about-section">
+            <span class="section-label">// about.sh --purpose</span>
+            <h1 class="section-title">What is this?</h1>
 
-        <article class="post">
-            <div class="post-meta">
-                <span class="post-date">2025 — 04 — 10</span>
-                <span class="post-tag">Research</span>
+            <p class="about-lead">
+                This is the open research interface for the Control Systems group at the Technical University
+                of Sofia, Plovdiv Branch — an engineering department whose work spans classical and modern
+                control theory, intelligent systems, robotics, and industrial automation.
+            </p>
+
+            <p class="about-body">
+                The site exists to make the group's work visible and accessible. Academic research too often
+                remains locked inside conference papers and university archives. Here, we document active
+                projects, publish research notes, and maintain a running account of what we are building
+                and why. Everything is written for an audience of engineers, PhD students, and technically
+                curious visitors — not press releases.
+            </p>
+
+            <p class="about-body">
+                The design intentionally reflects the aesthetic of the tools we use every day: terminals,
+                monospace editors, oscilloscope readouts, block diagrams. If it looks like a laboratory
+                instrument rather than a marketing page, that is by choice.
+            </p>
+
+            <ul class="feature-list">
+                <li>Research domain overview with engineering-accurate descriptions</li>
+                <li>Blog — academic notes, project updates, and field reports</li>
+                <li>Homebrew — open-source projects from the group's researchers</li>
+                <li>PhD student profiles and active research topics</li>
+                <li>IRC room — live, open-access channel for discussion</li>
+                <li>Contact form routing directly to the department</li>
+            </ul>
+
+            <p class="about-body">
+                The website is itself a research artefact. It is built without frameworks, bundlers, or
+                transpilers — every page is plain HTML, CSS, and JavaScript. The backend runs on a
+                self-hosted NixOS machine behind a Cloudflare Tunnel. The source is open, the dependencies
+                are minimal, and the stack is documented below.
+            </p>
+        </section>
+
+        <!-- ── Section B: Internals ───────────────────────────────────── -->
+        <section class="about-section">
+            <span class="section-label">// about.sh --internals</span>
+            <h2 class="section-title">Innerworkings</h2>
+
+            <p class="about-body">
+                A full technical breakdown of every layer of the stack. All components are open-source
+                or standard platform services. Nothing proprietary.
+            </p>
+
+            <p class="manifest-header">$ cat README.md</p>
+
+            <div class="manifest-block" aria-label="Technical stack">
+    <div class="readme-title"># ctrl-sys-site</div>
+
+    <div class="readme-badges">
+        <span class="rb rb-html">HTML5</span>
+        <span class="rb rb-css">CSS3</span>
+        <span class="rb rb-js">Vanilla JS</span>
+        <span class="rb rb-node">Node.js 22</span>
+        <span class="rb rb-sqlite">SQLite</span>
+        <span class="rb rb-ergo">Ergo IRCd</span>
+        <span class="rb rb-nixos">NixOS 25.11</span>
+        <span class="rb rb-netlify">Netlify</span>
+        <span class="rb rb-cf">Cloudflare</span>
+        <span class="rb rb-oss">open source</span>
+    </div>
+
+    <div class="readme-h2">Frontend</div>
+    <ul class="readme-ul">
+        <li><span class="rl-key">HTML5</span> — semantic markup, no templates or preprocessors</li>
+        <li><span class="rl-key">CSS3</span> — ~3200-line master sheet, 8 named themes, CSS variable system</li>
+        <li><span class="rl-key">Vanilla JS</span> — no frameworks, no bundlers, no transpilers</li>
+        <li><span class="rl-key">grid-fx.js</span> — 14+ cycling canvas visualisation modes</li>
+        <li><span class="rl-key">DOMPurify v3.2</span> — blog markdown sanitisation</li>
+        <li><span class="rl-key">Tabler Icons</span> — SVG icon library via CDN</li>
+        <li><span class="rl-key">Leaflet.js</span> — campus map, contact section</li>
+    </ul>
+
+    <div class="readme-h2">Backend</div>
+    <table class="readme-table">
+        <tr><th>Package</th><th>Purpose</th></tr>
+        <tr><td>Node.js 22 + Express</td><td>HTTP runtime and API framework</td></tr>
+        <tr><td>better-sqlite3</td><td>Synchronous SQLite — post storage, zero-config</td></tr>
+        <tr><td>multer</td><td>Multipart file uploads — images · PDFs · archives (50 MB cap)</td></tr>
+        <tr><td>express-rate-limit</td><td>Rate limiting — 5 req/h subscribe, 30 req/15 min admin</td></tr>
+        <tr><td>node:crypto AES-256-GCM</td><td>Subscriber email encryption at rest</td></tr>
+        <tr><td>morgan · dotenv · cors</td><td>Dev logging, environment, cross-origin policy</td></tr>
+    </table>
+
+    <div class="readme-h2">IRC</div>
+    <ul class="readme-ul">
+        <li><span class="rl-key">Ergo IRCd</span> — single Go binary, no external dependencies</li>
+        <li><span class="rl-key">Channel</span> — #control-systems · open guest access · 50-message history</li>
+        <li><span class="rl-key">Client</span> — irc.js, vanilla WebSocket, no IRC library</li>
+        <li><span class="rl-key">Nick persistence</span> — localStorage, 7-day TTL</li>
+    </ul>
+
+    <div class="readme-h2">Hosting &amp; Deployment</div>
+    <ul class="readme-ul">
+        <li><span class="rl-key">Netlify</span> — static frontend + Functions (contact form → Discord webhook)</li>
+        <li><span class="rl-key">Self-hosted</span> — NixOS machine "Dedalus", backend via systemd</li>
+        <li><span class="rl-key">Cloudflare Tunnel</span> — cloudflared → public HTTPS/WSS, no open inbound ports</li>
+    </ul>
+
+    <div class="readme-h2">OS / Infra</div>
+    <ul class="readme-ul">
+        <li><span class="rl-key">NixOS 25.11</span> — declarative, reproducible, flake.nix pinned inputs</li>
+        <li><span class="rl-key">systemd units</span> — ddl-backend · ddl-cloudflared · ddl-ergo</li>
+        <li><span class="rl-key">XRDP over LAN</span> — XFCE desktop for maintenance access</li>
+    </ul>
             </div>
-            <h2><a href="#">Adaptive Control in the Age of Neural Networks</a></h2>
-            <p>Classical control theory built its foundations on precise mathematical models of physical systems — transfer functions, state-space representations, stability criteria derived from first principles. For decades this was sufficient. But as the systems we engineer become more complex, nonlinear, and context-dependent, the assumption of a fixed, well-characterized plant begins to strain under the weight of reality.</p>
-            <p>Our department has been investigating a class of hybrid approaches that treat the neural network not as a replacement for the classical controller, but as an online system identification layer. Early results on a simulated two-joint robotic arm suggest that this architecture can reduce steady-state error by 38% compared to a conventional PID tuned to the linearized model, without sacrificing the theoretical stability guarantees that make control systems trustworthy in safety-critical deployments.</p>
-            <a href="#" class="read-more">Continue reading →</a>
-        </article>
+        </section>
 
-        <article class="post">
-            <div class="post-meta">
-                <span class="post-date">2025 — 03 — 22</span>
-                <span class="post-tag">Announcement</span>
-            </div>
-            <h2><a href="#">Spring Seminar Series: Digital Twins for Industrial Control</a></h2>
-            <p>Beginning the first Friday of April, the department's weekly seminar series will pivot to the topic of Digital Twin architectures applied to industrial PLC environments. The series is open to all BSc, MSc, and doctoral students. External participants from industry are welcome — contact Room №4319 to register.</p>
-            <p>The first session will cover the theoretical underpinnings of synchronization between a live physical plant and its virtual counterpart, with a focus on maintaining sub-second latency over industrial Ethernet. Subsequent sessions will present case studies from the automotive and chemical processing sectors, followed by an open workshop where student teams will instrument a small-scale laboratory process with a prototype twin.</p>
-            <a href="#" class="read-more">Continue reading →</a>
-        </article>
-
-        <article class="post">
-            <div class="post-meta">
-                <span class="post-date">2025 — 02 — 14</span>
-                <span class="post-tag">Student Work</span>
-            </div>
-            <h2><a href="#">ControlHack 2025 — Results and Reflections</a></h2>
-            <p>Forty-one students across twelve teams competed in this year's ControlHack, the department's annual embedded systems sprint. Teams were given 30 hours and a Raspberry Pi-based hardware kit to implement a closed-loop position controller for a DC motor — with a twist: the motor's load was changed silently at the halfway mark, requiring adaptive or robust designs to maintain performance.</p>
-            <p>The winning team, composed of three third-year MSc students, implemented a model reference adaptive controller with a gradient-descent parameter update law. Their controller recovered full performance within four seconds of the load change, a result that impressed the panel of academic and industry judges alike. Full write-ups from the top three teams will be posted to the department repository next month.</p>
-            <a href="#" class="read-more">Continue reading →</a>
-        </article>
-
-        <article class="post">
-            <div class="post-meta">
-                <span class="post-date">2025 — 01 — 08</span>
-                <span class="post-tag">Faculty</span>
-            </div>
-            <h2><a href="#">New Collaboration: Fault Detection with the TU-Sofia Main Campus</a></h2>
-            <p>We are pleased to announce a formal research collaboration with the Department of Automation at the main TU-Sofia campus. The joint project focuses on fault detection and isolation in closed-loop control systems, a field of increasing relevance as autonomous systems proliferate across manufacturing, energy, and transportation.</p>
-            <p>The collaboration will produce two jointly supervised PhD candidates beginning in the autumn semester, a shared laboratory testbed for injection of simulated actuator and sensor faults, and a planned joint publication targeting the IEEE Transactions on Control Systems Technology. Further details will be shared at the spring faculty assembly.</p>
-            <a href="#" class="read-more">Continue reading →</a>
-        </article>
-
-        <article class="post">
-            <div class="post-meta">
-                <span class="post-date">2024 — 11 — 30</span>
-                <span class="post-tag">Infrastructure</span>
-            </div>
-            <h2><a href="#">Laboratory Expansion: New Real-Time Hardware-in-the-Loop Rig</a></h2>
-            <p>The department has taken delivery of a new hardware-in-the-loop testing station, funded through the university's equipment renewal program. The rig supports real-time simulation at 1 kHz step rates, interfaces with standard MATLAB/Simulink code generation workflows, and includes a reconfigurable analog I/O front-end for connecting physical actuators and sensors.</p>
-            <p>The station will be available to research students from the spring semester. Priority access will be given to doctoral candidates whose thesis work involves experimental validation. Contact the lab supervisor in Room №4319 to schedule an orientation session and discuss your experimental requirements.</p>
-            <a href="#" class="read-more">Continue reading →</a>
-        </article>
-
-        <p class="blog-footer-note">CONTROL SYSTEMS DEPT. — TU-SOFIA PLOVDIV BRANCH — ALL RIGHTS RESERVED</p>
+        <p class="about-footer-note">ctrl-sys-site · tu-sofia plovdiv · open source</p>
     </main>
 
     <script src="ControlSystems.js"></script>

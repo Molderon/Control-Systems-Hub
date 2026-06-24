@@ -112,37 +112,40 @@ function generateMatrixRain() {
         'J=∫(xᵀQx+uᵀRu)dt', 'PM=arg(G(jω))+180°',
     ];
 
-    // Sparse: ~10 columns across the full width, placed randomly
     const count = Math.max(6, Math.floor(window.innerWidth / 180));
+    const frag = document.createDocumentFragment();
 
     for (let i = 0; i < count; i++) {
         const col = document.createElement('div');
         col.className = 'matrix-column';
         col.style.left  = `${(i / count) * 90 + Math.random() * (90 / count)}%`;
-        col.style.animationDuration = `${Math.random() * 14 + 22}s`;   // 22–36s slow fall
-        col.style.animationDelay    = `${Math.random() * 40}s`;         // 0–40s stagger → rare
-
+        col.style.animationDuration = `${Math.random() * 14 + 22}s`;
+        col.style.animationDelay    = `${Math.random() * 40}s`;
         col.textContent = FORMULAS[Math.floor(Math.random() * FORMULAS.length)];
-        matrixRain.appendChild(col);
+        frag.appendChild(col);
     }
+    matrixRain.appendChild(frag);
 }
 
 function generateParticles() {
     const particlesContainer = document.getElementById('particlesContainer');
     if (!particlesContainer) return;
+    const frag = document.createDocumentFragment();
     for (let i = 0; i < 50; i++) {
         const particle = document.createElement('div');
         particle.className = 'particle';
         particle.style.left = `${Math.random() * 100}%`;
         particle.style.animationDelay = `${Math.random() * 20}s`;
         particle.style.animationDuration = `${Math.random() * 10 + 20}s`;
-        particlesContainer.appendChild(particle);
+        frag.appendChild(particle);
     }
+    particlesContainer.appendChild(frag);
 }
 
 function generateDataStreams() {
     const dataStreams = document.getElementById('dataStreams');
     if (!dataStreams) return;
+    const frag = document.createDocumentFragment();
     for (let i = 0; i < 10; i++) {
         const stream = document.createElement('div');
         stream.className = 'data-stream';
@@ -150,8 +153,9 @@ function generateDataStreams() {
         stream.style.left = `-300px`;
         stream.style.animationDelay = `${Math.random() * 5}s`;
         stream.style.transform = `rotate(${Math.random() * 30 - 15}deg)`;
-        dataStreams.appendChild(stream);
+        frag.appendChild(stream);
     }
+    dataStreams.appendChild(frag);
 }
 
 // Initial Call
@@ -160,57 +164,46 @@ generateParticles();
 generateDataStreams();
 
 window.addEventListener('resize', () => {
-    const matrixRain = document.getElementById('matrixRain');
-    if (matrixRain) {
-        matrixRain.innerHTML = '';
-        generateMatrixRain();
-    }
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(() => {
+        const matrixRain = document.getElementById('matrixRain');
+        if (matrixRain) {
+            matrixRain.innerHTML = '';
+            generateMatrixRain();
+        }
+    }, 200);
 });
 
 /* ==========================================================
    INTERACTIVE MOUSE EFFECTS
    ========================================================== */
-document.addEventListener('mousemove', (e) => {
-    const mouseX = e.clientX;
-    const mouseY = e.clientY;
-    
-    const orbs = document.querySelectorAll('.orb');
-    orbs.forEach((orb, index) => {
+let _mouseX = 0, _mouseY = 0, _rafPending = false, _resizeTimer;
+
+const cursorGlow = window.innerWidth > 768
+    ? (() => { const el = document.createElement('div'); el.className = 'cursor-glow'; document.body.appendChild(el); return el; })()
+    : null;
+
+function _applyMouseEffects() {
+    _rafPending = false;
+    const mouseX = _mouseX, mouseY = _mouseY;
+
+    document.querySelectorAll('.orb').forEach((orb, index) => {
         const speed = (index + 1) * 0.02;
-        const x = (mouseX - window.innerWidth / 2) * speed;
-        const y = (mouseY - window.innerHeight / 2) * speed;
-        orb.style.transform = `translate(${x}px, ${y}px)`;
+        orb.style.transform = `translate(${(mouseX - window.innerWidth / 2) * speed}px, ${(mouseY - window.innerHeight / 2) * speed}px)`;
     });
 
-    if (window.innerWidth > 768) {
-        const particles = document.querySelectorAll('.particle');
-        particles.forEach(particle => {
-            const rect = particle.getBoundingClientRect();
-            const distance = Math.sqrt(Math.pow(mouseX - (rect.left + rect.width / 2), 2) + Math.pow(mouseY - (rect.top + rect.height / 2), 2));
-            if (distance < 150) {
-                const brightness = 1 - (distance / 150);
-                particle.style.boxShadow = `0 0 ${20 + brightness * 30}px rgba(0, 255, 255, ${0.5 + brightness * 0.5})`;
-                particle.style.transform = `scale(${1 + brightness * 0.5})`;
-            } else {
-                particle.style.boxShadow = '';
-                particle.style.transform = '';
-            }
-        });
-    }
-});
-
-// Cursor Glow Overlay
-if (window.innerWidth > 768) {
-    const cursorGlow = document.createElement('div');
-    cursorGlow.style.cssText = `position: fixed; width: 400px; height: 400px; border-radius: 50%; background: radial-gradient(circle, rgba(0, 255, 255, 0.1) 0%, transparent 70%); pointer-events: none; z-index: 9999; transform: translate(-50%, -50%); transition: opacity 0.3s ease; opacity: 0;`;
-    document.body.appendChild(cursorGlow);
-    document.addEventListener('mousemove', (e) => {
-        cursorGlow.style.left = e.clientX + 'px';
-        cursorGlow.style.top = e.clientY + 'px';
+    if (cursorGlow) {
+        cursorGlow.style.transform = `translate(${mouseX - 200}px, ${mouseY - 200}px)`;
         cursorGlow.style.opacity = '1';
-    });
-    document.addEventListener('mouseleave', () => cursorGlow.style.opacity = '0');
+    }
 }
+
+document.addEventListener('mousemove', (e) => {
+    _mouseX = e.clientX;
+    _mouseY = e.clientY;
+    if (!_rafPending) { _rafPending = true; requestAnimationFrame(_applyMouseEffects); }
+});
+document.addEventListener('mouseleave', () => { if (cursorGlow) cursorGlow.style.opacity = '0'; });
 
 /* ==========================================================
    UI UTILITIES (Smooth Scroll, Tabs, Fade-In)
@@ -218,10 +211,26 @@ if (window.innerWidth > 768) {
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
         const href = this.getAttribute('href');
-        if (href && href.length > 1) {
-            e.preventDefault();
-            const target = document.querySelector(href === '#top' ? 'body' : href);
-            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (!href || href.length <= 1) return;
+
+        e.preventDefault();
+
+        const scrollTarget = document.querySelector(href === '#top' ? 'body' : href);
+        if (scrollTarget) scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        const flash = document.createElement('div');
+        flash.className = 'nav-flash-line';
+        document.body.appendChild(flash);
+        flash.addEventListener('animationend', () => flash.remove());
+
+        if (href !== '#top') {
+            const pulseTarget = document.querySelector(href);
+            if (pulseTarget) {
+                pulseTarget.classList.remove('section-targeted');
+                void pulseTarget.offsetWidth;
+                pulseTarget.classList.add('section-targeted');
+                setTimeout(() => pulseTarget.classList.remove('section-targeted'), 1300);
+            }
         }
     });
 });
@@ -233,81 +242,6 @@ const observer = new IntersectionObserver((entries) => {
 }, { threshold: 0.1 });
 document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
 
-// Tabs — enhanced transition
-(function () {
-    const tabs   = document.querySelectorAll('.tab-item');
-    const panels = document.querySelectorAll('.content-panel');
-    const body   = document.querySelector('.term-panel-body');
-    const header = document.querySelector('.win-title-text');
-    const status = document.querySelector('.win-status-bar');
-
-    const TAB_META = {
-        performance: { title: 'DOMAINS.DAT',      label: 'LOADED — RESEARCH DOMAINS' },
-        security:    { title: 'PUBLICATIONS.DAT',  label: 'LOADED — PUBLICATIONS'     },
-        network:     { title: 'EVENTS.DAT',        label: 'LOADED — EVENTS'           },
-        analytics:   { title: 'HACKATHON.DAT',     label: 'LOADED — HACKATHON'        },
-        integration: { title: 'THESIS.DAT',        label: 'LOADED — THESIS TOPICS'    },
-    };
-
-    const GLITCH_STATES = ['FLUSHING…', 'READING…', 'DECRYPTING…'];
-
-    function sweepScanLine() {
-        if (!body) return;
-        const sw = document.createElement('div');
-        sw.className = 'term-sweep';
-        body.appendChild(sw);
-        setTimeout(() => sw.remove(), 320);
-    }
-
-    function glitchStatus(finalLabel) {
-        if (!status) return;
-        let i = 0;
-        const run = () => {
-            if (i < GLITCH_STATES.length) {
-                status.textContent = GLITCH_STATES[i++];
-                setTimeout(run, 80);
-            } else {
-                status.textContent = finalLabel;
-            }
-        };
-        run();
-    }
-
-    let switching = false;
-
-    tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            const targetId = tab.getAttribute('data-tab');
-            if (switching || tab.classList.contains('active')) return;
-            switching = true;
-
-            const activePanel = document.querySelector('.content-panel.active');
-            const meta = TAB_META[targetId] || { title: targetId.toUpperCase() + '.DAT', label: 'LOADED' };
-
-            // Exit animation on current panel
-            if (activePanel) {
-                activePanel.classList.remove('active');
-                activePanel.classList.add('panel-exit');
-                setTimeout(() => activePanel.classList.remove('panel-exit'), 180);
-            }
-
-            // Switch tabs immediately (visual)
-            tabs.forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-
-            // After exit, bring in new panel
-            setTimeout(() => {
-                panels.forEach(p => { p.classList.remove('active'); p.classList.remove('panel-exit'); });
-                const next = document.getElementById(targetId);
-                if (next) next.classList.add('active');
-                if (header) header.textContent = meta.title;
-                sweepScanLine();
-                glitchStatus(meta.label);
-                switching = false;
-            }, 185);
-        });
-    });
-})();
 
 /* ==========================================================
    FORM TRANSMISSION (NETLIFY + DISCORD)
@@ -369,44 +303,17 @@ if (contactForm) {
 const cyberTexts = ['R&D...', 'DATA SCIENCE', 'INDUSTRIAL REVOLUTIONS', 'NEURO-SYMBOLICS', 'SYSTEM ARCHITECTURE', 'NEUROMORPHIC COMPUTING', 'COMPUTER SCIENCE', 'ROBOTICS', 'CONTROL THEORY', 'MACHINE LEARNING', 'DIGITAL TWINS','ADAPTIVE CONTROL', 'TEMPLE OS', 'DIGITAL PHENOTYPES'];
 
 setInterval(() => {
-    const randomText = cyberTexts[Math.floor(Math.random() * cyberTexts.length)];
-    const tempElement = document.createElement('div');
-    tempElement.textContent = randomText;
-    tempElement.style.cssText = `position: fixed; top: ${Math.random() * 100}vh; left: ${Math.random() * 100}vw; color: var(--primary-cyan); font-size: 0.8rem; font-weight: 700; z-index: 1000; opacity: 0.7; pointer-events: none; animation: fadeOut 3s ease-out forwards; text-shadow: 0 0 10px var(--primary-cyan);`;
-    document.body.appendChild(tempElement);
-    setTimeout(() => tempElement.remove(), 3000);
+    const el = document.createElement('div');
+    el.className = 'cyber-float-text';
+    el.textContent = cyberTexts[Math.floor(Math.random() * cyberTexts.length)];
+    el.style.top  = `${Math.random() * 100}vh`;
+    el.style.left = `${Math.random() * 100}vw`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 3000);
 }, 5000);
 
-// Global Styles for Cyber Text
-const style = document.createElement('style');
-style.textContent = `@keyframes fadeOut { 0% { opacity: 0.7; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-50px); } }`;
-document.head.appendChild(style);
 
-
-/* ==========================================================
-   ENHANCED SMOOTH SCROLL — nav flash line on click
-   ========================================================== */
-document.querySelectorAll('a[href^="#"], .mobile-menu-nav a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', () => {
-        // Spawn flash line
-        const flash = document.createElement('div');
-        flash.className = 'nav-flash-line';
-        document.body.appendChild(flash);
-        flash.addEventListener('animationend', () => flash.remove());
-
-        // Pulse the target section
-        const href = anchor.getAttribute('href');
-        if (href && href.length > 1 && href !== '#top') {
-            const target = document.querySelector(href);
-            if (target) {
-                target.classList.remove('section-targeted');
-                void target.offsetWidth;
-                target.classList.add('section-targeted');
-                setTimeout(() => target.classList.remove('section-targeted'), 1300);
-            }
-        }
-    });
-});
+/* ── Smooth scroll + nav flash merged above ─────────────── */
 
 /* ==========================================================
    WIN-PANEL BOOT SEQUENCE — animate on viewport entry
@@ -440,16 +347,6 @@ document.querySelectorAll('a[href^="#"], .mobile-menu-nav a[href^="#"]').forEach
 
     if (!toggleBtn || !panel || !overlay) return;
 
-    const THEMES = {
-        cyber:       { bg: '#0f051a', accent1: '#00ffff',  accent2: '#ff00ff' },
-        'pink-blood':{ bg: '#050007', accent1: '#f17e97',  accent2: '#CE0D3C' },
-        temerald:    { bg: '#121111', accent1: '#4ade7f',  accent2: '#d4953b' },
-        neovoid:     { bg: '#000000', accent1: '#00BFFF',  accent2: '#FF0040' },
-        eva01:       { bg: '#0d0020', accent1: '#adff2f',  accent2: '#7c4dff' },
-        catppuccin:  { bg: '#181825', accent1: '#89b4fa',  accent2: '#cba6f7' },
-        aura:        { bg: '#15161e', accent1: '#CBC3E3',  accent2: '#FFAFCC' },
-        caroline:    { bg: '#1a0e0b', accent1: '#d4879d',  accent2: '#e07d44' },
-    };
 
     function openPanel() {
         panel.classList.add('open');
@@ -475,16 +372,6 @@ document.querySelectorAll('a[href^="#"], .mobile-menu-nav a[href^="#"]').forEach
             document.body.classList.add(`theme-${name}`);
         }
 
-        // Update cursor glow color (injected by existing JS, hard-coded rgba)
-        const t = THEMES[name] || THEMES.cyber;
-        const glowEl = document.querySelector('div[style*="radial-gradient(circle, rgba(0, 255, 255"]');
-        if (glowEl) {
-            const r = parseInt(t.accent1.slice(1,3),16);
-            const g = parseInt(t.accent1.slice(3,5),16);
-            const b = parseInt(t.accent1.slice(5,7),16);
-            glowEl.style.background = `radial-gradient(circle, rgba(${r},${g},${b},0.1) 0%, transparent 70%)`;
-        }
-
         // Mark active card
         cards.forEach(c => c.classList.toggle('is-active', c.dataset.theme === name));
 
@@ -497,7 +384,7 @@ document.querySelectorAll('a[href^="#"], .mobile-menu-nav a[href^="#"]').forEach
 
     // Restore saved theme
     const saved = localStorage.getItem('cs-theme');
-    if (saved && THEMES[saved]) applyTheme(saved);
+    if (saved) applyTheme(saved);
 
     toggleBtn.addEventListener('click', () => {
         panel.classList.contains('open') ? closePanel() : openPanel();
@@ -607,4 +494,112 @@ document.querySelectorAll('a[href^="#"], .mobile-menu-nav a[href^="#"]').forEach
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape' && open) { open = false; hide(); }
     });
+})();
+
+/* ── Language Toggle ─────────────────────────────────────────── */
+(function initLangToggle() {
+    const btn   = document.getElementById('langToggle');
+    const optEN = document.getElementById('langEN');
+    const optBG = document.getElementById('langBG');
+    if (!btn || !optEN || !optBG) return;
+
+    let current = localStorage.getItem('cs-lang') || 'EN';
+
+    function applyLang(lang) {
+        current = lang;
+        optEN.classList.toggle('lang-active', lang === 'EN');
+        optBG.classList.toggle('lang-active', lang === 'BG');
+        localStorage.setItem('cs-lang', lang);
+        document.documentElement.lang = lang === 'BG' ? 'bg' : 'en';
+    }
+
+    applyLang(current);
+
+    btn.addEventListener('click', () => {
+        const next = current === 'EN' ? 'BG' : 'EN';
+        btn.classList.add('glitching');
+        btn.addEventListener('animationend', () => btn.classList.remove('glitching'), { once: true });
+        applyLang(next);
+    });
+})();
+
+/* ── Blog Portal ─────────────────────────────────────────────── */
+(function initBlogPortal() {
+    const openBtn  = document.getElementById('blogOpenBtn');
+    const portal   = document.getElementById('blogPortal');
+    const overlay  = document.getElementById('blogPortalOverlay');
+    const closeBtn = document.getElementById('blogPortalClose');
+    const subEmail = document.getElementById('blogSubEmail');
+    const subBtn   = document.getElementById('blogSubBtn');
+    const subStatus= document.getElementById('blogSubStatus');
+
+    if (!openBtn || !portal || !overlay) return;
+
+    const BACKEND = window.__BLOG_API_URL__ || '';
+
+    function openPortal() {
+        portal.classList.add('open');
+        overlay.classList.add('open');
+        portal.setAttribute('aria-hidden', 'false');
+        overlay.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => { if (subEmail) subEmail.focus(); }, 350);
+    }
+
+    function closePortal() {
+        portal.classList.remove('open');
+        overlay.classList.remove('open');
+        portal.setAttribute('aria-hidden', 'true');
+        overlay.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+    }
+
+    openBtn.addEventListener('click', openPortal);
+    closeBtn.addEventListener('click', closePortal);
+    overlay.addEventListener('click', closePortal);
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && portal.classList.contains('open')) closePortal();
+    });
+
+    if (subBtn) {
+        subBtn.addEventListener('click', async () => {
+            const email = subEmail ? subEmail.value.trim() : '';
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                setStatus('err', 'INVALID EMAIL FORMAT');
+                return;
+            }
+
+            subBtn.disabled = true;
+            subBtn.textContent = 'SYNCING…';
+
+            try {
+                const res = await fetch(`${BACKEND}/api/subscribe`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                if (res.ok) {
+                    setStatus('ok', 'SIGNAL LOCKED — SUBSCRIBED');
+                    if (subEmail) subEmail.value = '';
+                    setTimeout(() => setStatus('', ''), 5000);
+                } else {
+                    const d = await res.json().catch(() => ({}));
+                    setStatus('err', d.error || 'RELAY ERROR — TRY AGAIN');
+                }
+            } catch {
+                setStatus('err', 'BACKEND OFFLINE — CHECK CONNECTION');
+            } finally {
+                subBtn.disabled = false;
+                subBtn.textContent = 'SYNC';
+            }
+        });
+    }
+
+    function setStatus(cls, msg) {
+        if (!subStatus) return;
+        subStatus.className = 'blog-sub-status' + (cls ? ' ' + cls : '');
+        subStatus.textContent = msg;
+    }
 })();

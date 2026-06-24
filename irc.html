@@ -4,184 +4,417 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IRC Room — Control Systems, TU-Sofia Plovdiv</title>
+    <link href="css/variables.css" rel="stylesheet">
     <link href="ControlSystems.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
+        /* ── Vintage phosphor palette ────────────────────────────────────── */
+        :root {
+            --ph:        #00dd44;
+            --ph-dim:    rgba(0, 221, 68, 0.32);
+            --ph-mid:    rgba(0, 221, 68, 0.62);
+            --ph-hi:     rgba(0, 221, 68, 0.90);
+            --ph-bg:     #070907;
+            --ph-surf:   #0b0f0b;
+            --ph-border: rgba(0, 221, 68, 0.20);
+            --ph-err:    #f59e0b;
+            --ph-text:   #d0ffd0;
+            --ph-self:   #88ffaa;
+        }
+
+        /* Override site-wide dark-purple body on this page */
+        body { background: var(--ph-bg) !important; }
+        .cyber-gradient { opacity: 0.06 !important; }
+        .grid-glow { opacity: 0.20 !important; }
+
+        /* ── Page layout ─────────────────────────────────────────────────── */
         .irc-container {
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 120px 24px 80px;
+            padding: 110px 20px 70px;
+        }
+
+        .back-link {
+            align-self: flex-start;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.62rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--ph-dim);
+            text-decoration: none;
+            margin-bottom: 18px;
+            transition: color 0.2s;
+        }
+        .back-link::before { content: '← '; }
+        .back-link:hover   { color: var(--ph); }
+
+        /* ── ASCII banner ────────────────────────────────────────────────── */
+        .irc-banner {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.60rem;
+            line-height: 1.18;
+            color: var(--ph);
+            text-shadow: 0 0 8px var(--ph), 0 0 22px rgba(0, 221, 68, 0.35);
             text-align: center;
+            white-space: pre;
+            user-select: none;
+            margin: 0 0 4px;
+            opacity: 0.88;
         }
 
+        .irc-banner-sub {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.55rem;
+            color: var(--ph-dim);
+            text-align: center;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            margin: 0 0 16px;
+        }
+
+        /* ── Terminal frame ──────────────────────────────────────────────── */
         .irc-terminal {
-            max-width: 640px;
             width: 100%;
-            border: 1px solid var(--border-color);
-            background: var(--card-bg);
-            padding: 0;
+            max-width: 1200px;
+            border: 1px solid var(--ph-border);
+            background: var(--ph-surf);
             position: relative;
+            box-shadow: 0 0 30px rgba(0, 221, 68, 0.06),
+                        inset 0 0 50px rgba(0, 0, 0, 0.55);
         }
 
-        .irc-terminal::before {
+        /* CRT scanline overlay */
+        .irc-terminal::after {
             content: '';
             position: absolute;
-            inset: -1px;
-            background: linear-gradient(135deg,
-                rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.3),
-                transparent 50%,
-                rgba(var(--accent2-r), var(--accent2-g), var(--accent2-b), 0.2)
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 0, 0, 0.04) 2px,
+                rgba(0, 0, 0, 0.04) 4px
             );
             pointer-events: none;
-            z-index: -1;
+            z-index: 10;
         }
 
+        /* ── Title bar ───────────────────────────────────────────────────── */
         .irc-title-bar {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 8px 14px;
-            background: linear-gradient(90deg,
-                rgba(var(--chrome-r), var(--chrome-g), var(--chrome-b), 0.88) 0%,
-                rgba(var(--chrome-r), var(--chrome-g), var(--chrome-b), 0.55) 45%,
-                rgba(0, 0, 0, 0.97) 100%
-            );
-            border-bottom: 1px solid rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.4);
+            padding: 7px 14px;
+            background: rgba(0, 221, 68, 0.04);
+            border-bottom: 1px solid var(--ph-border);
         }
 
         .irc-title-text {
-            font-size: 0.6rem;
+            font-family: 'Courier New', Courier, monospace;
+            font-variant-ligatures: none;
+            font-size: 0.56rem;
             letter-spacing: 2.5px;
             text-transform: uppercase;
-            color: var(--text-primary);
-            font-family: inherit;
+            color: var(--ph-mid);
         }
 
-        .irc-win-btns {
-            display: flex;
-            gap: 6px;
-        }
+        .irc-win-btns { display: flex; gap: 6px; }
 
         .irc-win-btn {
             width: 10px;
             height: 10px;
             border-radius: 50%;
-            border: 1px solid rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.28);
+            border: 1px solid var(--ph-border);
             background: transparent;
-            color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.5);
-            font-size: 0.45rem;
+            color: var(--ph-dim);
+            font-size: 0.44rem;
             cursor: default;
-        }
-
-        .irc-body {
-            padding: 48px 40px 40px;
-        }
-
-        .irc-prompt-line {
-            font-size: 0.62rem;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.7);
-            margin-bottom: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
         }
 
-        .irc-prompt-line::before {
-            content: '>';
-            color: var(--primary-cyan);
-            animation: blink 1.1s step-end infinite;
+        /* ── Body — two-panel flex ───────────────────────────────────────── */
+        .irc-body {
+            display: flex;
+            height: 740px;
         }
+
+        /* LEFT — chat */
+        .irc-chat-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--ph-border);
+            min-width: 0;
+        }
+
+        .irc-log {
+            flex: 1;
+            overflow-y: auto;
+            padding: 14px 18px;
+            font-family: 'Courier New', Courier, monospace;
+            font-variant-ligatures: none;
+            font-size: 0.74rem;
+            line-height: 1.82;
+            word-break: break-word;
+            color: var(--ph-text);
+        }
+
+        .irc-log::-webkit-scrollbar       { width: 3px; }
+        .irc-log::-webkit-scrollbar-track { background: transparent; }
+        .irc-log::-webkit-scrollbar-thumb { background: var(--ph-border); }
 
         @keyframes blink {
             0%, 100% { opacity: 1; }
             50%       { opacity: 0; }
         }
 
-        .irc-heading {
-            font-size: clamp(1.8rem, 5vw, 2.8rem);
-            font-weight: 900;
-            line-height: 1.1;
-            background: linear-gradient(135deg, var(--primary-cyan), var(--primary-pink));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 20px;
-        }
+        /* message line classes */
+        .irc-ts         { color: var(--ph-dim); margin-right: 5px; user-select: none; }
+        .irc-nick       { color: var(--ph); font-weight: bold; }
+        .irc-nick--self { color: var(--ph-self); font-weight: bold; }
+        .irc-msg        { color: var(--ph-text); }
+        .irc-sys        { color: var(--ph-mid); }
+        .irc-event      { color: var(--ph-dim); }
+        .irc-err        { color: var(--ph-err); }
 
-        .irc-sub {
-            color: var(--text-secondary);
-            font-size: 0.88rem;
-            line-height: 1.8;
-            margin-bottom: 36px;
-        }
+        /* @mention highlighting */
+        .irc-mention       { background: rgba(0,221,68,0.14); padding: 0 2px; color: #ffffff; }
+        .irc-mention--self { background: rgba(0,221,68,0.24); padding: 0 2px; color: var(--ph); font-weight: bold; }
 
-        .irc-divider {
-            width: 48px;
-            height: 1px;
-            background: linear-gradient(90deg,
-                transparent,
-                rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.6),
-                transparent
-            );
-            margin: 0 auto 36px;
-        }
-
-        .irc-features {
-            list-style: none;
-            padding: 0;
-            margin: 0 0 40px;
-            text-align: left;
-            display: inline-block;
-        }
-
-        .irc-features li {
-            font-size: 0.78rem;
-            color: var(--text-secondary);
-            letter-spacing: 0.5px;
-            line-height: 2;
-            padding-left: 20px;
-            position: relative;
-        }
-
-        .irc-features li::before {
-            content: '—';
-            position: absolute;
-            left: 0;
-            color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.6);
-        }
-
-        .irc-status {
-            font-size: 0.58rem;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.5);
-            border-top: 1px solid var(--border-color);
-            padding-top: 14px;
-            margin-top: 8px;
-        }
-
-        .back-link {
-            display: inline-flex;
+        /* input row */
+        .irc-input-row {
+            display: flex;
             align-items: center;
             gap: 8px;
-            font-size: 0.68rem;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: var(--text-secondary);
-            text-decoration: none;
-            margin-bottom: 40px;
-            transition: color 0.2s;
-            position: absolute;
-            top: 100px;
-            left: 24px;
+            padding: 9px 18px;
+            border-top: 1px solid var(--ph-border);
+            background: rgba(0, 0, 0, 0.28);
+            flex-shrink: 0;
         }
 
-        .back-link:hover { color: var(--primary-cyan); }
-        .back-link::before { content: '←'; }
+        .irc-prompt-glyph {
+            color: var(--ph);
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.78rem;
+            animation: blink 1.1s step-end infinite;
+            flex-shrink: 0;
+            user-select: none;
+        }
+
+        .irc-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--ph-text);
+            font-family: 'Courier New', Courier, monospace;
+            font-variant-ligatures: none;
+            font-size: 0.74rem;
+            caret-color: var(--ph);
+        }
+
+        .irc-input::placeholder {
+            color: var(--ph-dim);
+            font-size: 0.66rem;
+        }
+
+        /* RIGHT — side panel */
+        .irc-side-panel {
+            width: 230px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Tab bar */
+        .irc-side-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--ph-border);
+            flex-shrink: 0;
+        }
+
+        .irc-tab {
+            flex: 1;
+            padding: 6px 0;
+            background: transparent;
+            border: none;
+            border-right: 1px solid var(--ph-border);
+            color: var(--ph-dim);
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.55rem;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .irc-tab:last-child { border-right: none; }
+
+        .irc-tab.active {
+            background: rgba(0, 221, 68, 0.07);
+            color: var(--ph);
+        }
+
+        .irc-tab:hover:not(.active) {
+            background: rgba(0, 221, 68, 0.03);
+            color: var(--ph-mid);
+        }
+
+        /* Pane container */
+        .irc-pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        .irc-pane.hidden { display: none; }
+
+        /* Roster scroll buttons */
+        .irc-scroll-btn {
+            background: transparent;
+            border: none;
+            color: var(--ph-dim);
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.64rem;
+            cursor: pointer;
+            padding: 5px 0;
+            text-align: center;
+            transition: color 0.15s, background 0.15s;
+            flex-shrink: 0;
+        }
+
+        #rosterUp   { border-bottom: 1px solid var(--ph-border); }
+        #rosterDown { border-top:    1px solid var(--ph-border); }
+
+        .irc-scroll-btn:hover { color: var(--ph); background: rgba(0,221,68,0.05); }
+
+        /* Roster list */
+        .irc-roster-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 6px 0;
+            min-height: 0;
+        }
+
+        .irc-roster-list::-webkit-scrollbar       { width: 2px; }
+        .irc-roster-list::-webkit-scrollbar-track { background: transparent; }
+        .irc-roster-list::-webkit-scrollbar-thumb { background: var(--ph-border); }
+
+        .roster-nick {
+            padding: 3px 14px;
+            font-family: 'Courier New', Courier, monospace;
+            font-variant-ligatures: none;
+            font-size: 0.66rem;
+            color: var(--ph-mid);
+            cursor: pointer;
+            transition: background 0.1s, color 0.1s;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .roster-nick:hover         { background: rgba(0,221,68,0.08); color: var(--ph); }
+        .roster-nick--self         { color: var(--ph); }
+
+        /* Commands pane */
+        .irc-commands-inner {
+            padding: 10px 12px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .irc-commands-inner::-webkit-scrollbar       { width: 2px; }
+        .irc-commands-inner::-webkit-scrollbar-track { background: transparent; }
+        .irc-commands-inner::-webkit-scrollbar-thumb { background: var(--ph-border); }
+
+        .cmd-heading {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.50rem;
+            color: var(--ph);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin: 10px 0 6px;
+            border-bottom: 1px solid var(--ph-border);
+            padding-bottom: 3px;
+        }
+
+        .cmd-heading:first-child { margin-top: 0; }
+
+        .cmd-row {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.60rem;
+            color: var(--ph-mid);
+            margin-bottom: 7px;
+            line-height: 1.5;
+        }
+
+        .cmd-key {
+            color: var(--ph);
+            display: block;
+            margin-bottom: 1px;
+        }
+
+        /* ── Status bar ──────────────────────────────────────────────────── */
+        .irc-status {
+            padding: 5px 18px;
+            font-family: 'Courier New', Courier, monospace;
+            font-variant-ligatures: none;
+            font-size: 0.49rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--ph-dim);
+            border-top: 1px solid var(--ph-border);
+            background: rgba(0, 0, 0, 0.28);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* ── Responsive ──────────────────────────────────────────────────── */
+        @media (max-width: 700px) {
+            .irc-side-panel { display: none; }
+            .irc-chat-panel { border-right: none; }
+            .irc-banner     { font-size: 0.38rem; }
+            .irc-body       { height: 580px; }
+        }
+
+        /* ── VT323 digital font — all terminal text ─────────────────────── */
+        .irc-log, .irc-input, .irc-prompt-glyph, .irc-status,
+        .irc-title-text, .irc-tab, .roster-nick, .cmd-heading,
+        .cmd-row, .cmd-key, .irc-scroll-btn, .back-link,
+        .irc-banner, .irc-banner-sub {
+            font-family: 'VT323', 'Courier New', Courier, monospace;
+        }
+        .irc-log            { font-size: 1.15rem; line-height: 1.50; padding: 16px 20px; }
+        .irc-input          { font-size: 1.15rem; }
+        .irc-prompt-glyph   { font-size: 1.20rem; }
+        .irc-input::placeholder { font-family: 'VT323', 'Courier New', Courier, monospace; font-size: 1.0rem; }
+        .irc-status         { font-size: 0.82rem; padding: 7px 20px; }
+        .irc-title-text     { font-size: 0.90rem; }
+        .irc-tab            { font-size: 0.90rem; padding: 9px 0; }
+        .irc-tab.active     { text-shadow: 0 0 8px rgba(0, 221, 68, 0.32); }
+        .roster-nick        { font-size: 1.02rem; padding: 5px 16px; }
+        .irc-scroll-btn     { font-size: 1.05rem; padding: 9px 0; }
+        .cmd-heading        { font-size: 0.90rem; }
+        .cmd-row            { font-size: 0.92rem; }
+        .irc-banner         { font-size: 0.70rem; }
+        .irc-banner-sub     { font-size: 0.92rem; }
+        .irc-win-btn        { width: 14px; height: 14px; border-color: var(--ph-mid);
+                              background: rgba(0,221,68,0.05); cursor: pointer; }
+        .irc-win-btn:hover  { background: rgba(0,221,68,0.20); border-color: var(--ph); color: var(--ph); }
+        .irc-win-btns       { gap: 8px; }
+        .irc-input-row      { padding: 11px 20px; }
+        .irc-side-panel     { width: 250px; }
     </style>
 </head>
 <body id="top">
@@ -212,36 +445,95 @@
     <main class="irc-container">
         <a href="index.html" class="back-link">Back to main</a>
 
+        <pre class="irc-banner" aria-hidden="true">
+██╗██████╗  ██████╗     ██████╗  ██████╗  ██████╗ ███╗   ███╗
+██║██╔══██╗██╔════╝     ██╔══██╗██╔═══██╗██╔═══██╗████╗ ████║
+██║██████╔╝██║          ██████╔╝██║   ██║██║   ██║██╔████╔██║
+██║██╔══██╗██║          ██╔══██╗██║   ██║██║   ██║██║╚██╔╝██║
+██║██║  ██║╚██████╗     ██║  ██║╚██████╔╝╚██████╔╝██║ ╚═╝ ██║
+╚═╝╚═╝  ╚═╝ ╚═════╝     ╚═╝  ╚═╝ ╚═════╝  ╚═════╝ ╚═╝     ╚═╝</pre>
+        <p class="irc-banner-sub">#control-systems &nbsp;·&nbsp; tu-sofia plovdiv &nbsp;·&nbsp; live room</p>
+
         <div class="irc-terminal">
             <div class="irc-title-bar">
-                <span class="irc-title-text">IRC.SH — SESSION PENDING</span>
+                <span class="irc-title-text" id="ircTitle">IRC.SH — SESSION PENDING</span>
                 <div class="irc-win-btns">
                     <div class="irc-win-btn">×</div>
                     <div class="irc-win-btn">−</div>
                     <div class="irc-win-btn">□</div>
                 </div>
             </div>
+
             <div class="irc-body">
-                <div class="irc-prompt-line">CONNECTING TO CHANNEL #control-systems</div>
-                <h1 class="irc-heading">Coming Soon</h1>
-                <p class="irc-sub">
-                    The department's IRC room is under construction.<br>
-                    A real-time text channel for students, researchers, and collaborators is on the way.
-                </p>
-                <div class="irc-divider"></div>
-                <ul class="irc-features">
-                    <li>Open channel for discussion and Q&amp;A</li>
-                    <li>Direct messaging between lab members</li>
-                    <li>Pinned resources and reading lists</li>
-                    <li>Bot integrations for seminar reminders</li>
-                    <li>Persistent logs accessible to enrolled students</li>
-                </ul>
-                <p class="irc-status">STATUS: OFFLINE &nbsp;·&nbsp; ETA: TBD &nbsp;·&nbsp; CHECK BACK LATER</p>
+                <!-- LEFT: chat log + input -->
+                <div class="irc-chat-panel">
+                    <div id="ircLog" class="irc-log"></div>
+                    <div class="irc-input-row">
+                        <span class="irc-prompt-glyph" aria-hidden="true">&gt;</span>
+                        <input id="ircInput" class="irc-input" type="text"
+                               placeholder="/nick &lt;name&gt; · /me &lt;action&gt; · @nick to mention"
+                               autocomplete="off" spellcheck="false" aria-label="Message input">
+                    </div>
+                </div>
+
+                <!-- RIGHT: roster + commands tabs -->
+                <div class="irc-side-panel">
+                    <div class="irc-side-tabs">
+                        <button id="tabRoster" class="irc-tab active" aria-pressed="true">Roster</button>
+                        <button id="tabCmds"   class="irc-tab"        aria-pressed="false">Commands</button>
+                    </div>
+
+                    <div id="rosterPane" class="irc-pane">
+                        <button id="rosterUp"   class="irc-scroll-btn" aria-label="Scroll roster up">▲</button>
+                        <div    id="ircRoster"  class="irc-roster-list"></div>
+                        <button id="rosterDown" class="irc-scroll-btn" aria-label="Scroll roster down">▼</button>
+                    </div>
+
+                    <div id="commandsPane" class="irc-pane hidden">
+                        <div class="irc-commands-inner">
+                            <p class="cmd-heading">Commands</p>
+                            <div class="cmd-row">
+                                <span class="cmd-key">/nick &lt;name&gt;</span>
+                                Change your nickname (persisted 7 days)
+                            </div>
+                            <div class="cmd-row">
+                                <span class="cmd-key">/me &lt;action&gt;</span>
+                                Emote — e.g. /me waves
+                            </div>
+                            <p class="cmd-heading">Mentions</p>
+                            <div class="cmd-row">
+                                <span class="cmd-key">@nick</span>
+                                Tag a user. Highlighted in the chat log.
+                            </div>
+                            <div class="cmd-row">
+                                Click any name in the roster to insert @nick.
+                            </div>
+                            <p class="cmd-heading">Notes</p>
+                            <div class="cmd-row">
+                                Your nickname is saved in your browser for 7 days — no re-entry needed.
+                            </div>
+                            <div class="cmd-row">
+                                Max message length: 400 chars.
+                            </div>
+                            <div class="cmd-row">
+                                Guest access — no registration required.
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            <div id="ircStatus" class="irc-status">CONNECTING…</div>
         </div>
     </main>
 
     <script src="ControlSystems.js"></script>
     <script src="ui-enhancements.js"></script>
+    <script>
+        // Set to your Cloudflare Tunnel WSS URL before deploying.
+        // Example: window.__IRC_WSS_URL__ = 'wss://irc.yourdomain.com';
+        window.__IRC_WSS_URL__ = '';
+    </script>
+    <script src="irc.js"></script>
 </body>
 </html>

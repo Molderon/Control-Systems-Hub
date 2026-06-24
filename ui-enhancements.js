@@ -92,7 +92,7 @@
         const labels = {
             performance: { title: 'DOMAINS.DAT',      status: 'LOADED — RESEARCH DOMAINS' },
             security:    { title: 'PUBLICATIONS.DAT', status: 'LOADED — PUBLICATIONS' },
-            network:     { title: 'EVENTS.DAT',       status: 'LOADED — EVENTS' },
+            network:     { title: 'HOMEBREW.DAT',    status: 'LOADED — HOME BREW' },
             analytics:   { title: 'HACKATHON.DAT',    status: 'LOADED — HACKATHON' },
             integration: { title: 'THESIS.DAT',       status: 'LOADED — THESIS TOPICS' },
         };
