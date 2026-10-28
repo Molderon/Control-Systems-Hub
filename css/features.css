@@ -1,3 +1,14 @@
+/* ── Placeholder disclaimer note ─────────────────────────────── */
+.hb-placeholder-note,
+.roster-placeholder-note {
+    font-size: 0.58rem;
+    letter-spacing: 0.07em;
+    color: var(--text-secondary);
+    opacity: 0.45;
+    margin-top: 0.25rem;
+    margin-bottom: 0;
+}
+
 /* ── Domain Grid ─────────────────────────────────────────────── */
 .domain-grid {
     display: grid;
@@ -141,6 +152,56 @@
 .hb-card:hover {
     border-color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.5);
     box-shadow: 0 0 20px rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.1);
+}
+
+.hb-card.external-link {
+    cursor: pointer;
+}
+
+.hb-card.external-link:focus-visible {
+    outline: none;
+    border-color: var(--primary-cyan);
+    box-shadow: 0 0 20px rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.25);
+}
+
+.hb-card.external-link:hover {
+    border-color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.65);
+    box-shadow: 0 0 24px rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.18);
+    transform: translateY(-2px);
+    filter: brightness(1.06);
+}
+
+.hb-repo-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 2;
+    font-size: 0.56rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.55);
+    padding: 3px 8px;
+    border: 1px solid rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.22);
+    clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+    background: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.04);
+    transition: color 0.25s, border-color 0.25s, background 0.25s, transform 0.25s;
+    pointer-events: none;
+}
+
+.hb-card.external-link:hover .hb-repo-badge {
+    color: var(--primary-cyan);
+    border-color: var(--primary-cyan);
+    background: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.12);
+}
+
+.hb-card.external-link:hover .hb-repo-arrow {
+    transform: translateX(3px);
+    display: inline-block;
+}
+
+.hb-repo-arrow {
+    display: inline-block;
+    transition: transform 0.25s ease;
 }
 
 .hb-logo-bg {
@@ -319,14 +380,15 @@ section {
 
 .pricing-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(260px, 320px));
     gap: 16px;
     max-width: 1400px;
     margin: 0 auto;
+    justify-content: center;
 }
 
 @media (max-width: 1100px) {
-    .pricing-grid { grid-template-columns: repeat(2, 1fr); }
+    .pricing-grid { grid-template-columns: repeat(auto-fit, minmax(240px, 300px)); }
 }
 
 .pricing-card {
@@ -852,6 +914,65 @@ section {
     color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.55);
 }
 
+/* ── Publication hover panel (mirrors domain hover) ──────────── */
+.pub-hover-panel {
+    position: fixed;
+    z-index: 15000;
+    width: 340px;
+    background: rgba(10, 5, 20, 0.97);
+    border: 1px solid rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.35);
+    box-shadow: 0 0 24px rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.12);
+    clip-path: polygon(12px 0%, 100% 0%, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0% 100%, 0% 12px);
+    padding: 14px 16px;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.pub-hover-panel.phover-visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.phover-field {
+    font-size: 0.58rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--primary-cyan);
+    margin-bottom: 8px;
+    opacity: 0.9;
+}
+
+.phover-abstract {
+    font-size: 0.70rem;
+    color: var(--text-secondary);
+    line-height: 1.65;
+    margin-bottom: 11px;
+    opacity: 0.9;
+}
+
+.phover-date-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.12);
+    padding-top: 8px;
+    font-size: 0.58rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+
+.phover-date-label {
+    color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.55);
+}
+
+.phover-date {
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
 /* ── Open Roster button ──────────────────────────────────────── */
 @keyframes rosterPulse {
     0%, 100% {
@@ -948,3 +1069,36 @@ section {
 .hb-layer > p           { font-size: 0.62rem; opacity: 0.60; margin-bottom: 8px; }
 .hb-card-inner          { padding: 14px; gap: 7px; }
 .hb-desc                { font-size: 0.60rem; }
+
+/* ── Per-tab accent override (set by ui-enhancements.js) ─────────── */
+#features .term-panel-header .win-title-text {
+    color: var(--feature-accent, var(--primary-cyan));
+    text-shadow: 0 0 10px rgba(var(--feature-accent-rgb, var(--accent-r), var(--accent-g), var(--accent-b)), 0.7);
+    transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+
+#features .term-blink {
+    color: var(--feature-accent, var(--primary-cyan));
+    transition: color 0.3s ease;
+}
+
+#features .win-status-bar {
+    color: rgba(var(--feature-accent-rgb, var(--accent-r), var(--accent-g), var(--accent-b)), 0.85);
+    transition: color 0.3s ease;
+}
+
+#features .win-status-bar::before {
+    background: var(--feature-accent, var(--primary-cyan));
+    box-shadow: 0 0 5px var(--feature-accent, var(--primary-cyan));
+    transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+#features .tab-item.active::after {
+    background: var(--feature-accent, var(--primary-cyan));
+    box-shadow: 0 0 8px var(--feature-accent, var(--primary-cyan));
+}
+
+#features .tab-item.active {
+    box-shadow: 0 0 30px rgba(var(--feature-accent-rgb, var(--accent-r), var(--accent-g), var(--accent-b)), 0.1);
+    transition: box-shadow 0.3s ease;
+}
