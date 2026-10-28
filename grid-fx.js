@@ -4,6 +4,12 @@
 
     const canvas = document.getElementById('grid-canvas');
     if (!canvas) return;
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) return;
+
+    const smallScreen = window.matchMedia('(max-width: 480px)').matches;
+
     const ctx = canvas.getContext('2d');
 
     // CSS grid elements — hidden during hex mode
@@ -1943,20 +1949,25 @@
     /* ══════════════════════════════════════════════════════════════════════════
        MODE DEFINITIONS
     ══════════════════════════════════════════════════════════════════════════ */
-    const MODE_LABELS = [
+    let MODE_LABELS = [
         'EMBEDDED-COMPILE','GDB-DEBUG','NET-TOPOLOGY',
         'PID-ADAPTIVE-NN','GRAD-DESCENT','TRAJECTORY',
         'NEURAL-NET','FSM-DIAGRAM','KALMAN-FILTER','SVC-MESH',
         'HEX-GRID','SIERPINSKI-CHAOS','GAUSSIAN-DIST','CONWAY-GOL',
         'COBOT-UR5','CODE-HUMOR',
     ];
-    const MODES = [
+    let MODES = [
         drawEmbeddedCompile, drawGDB, drawTopology,
         drawBlockDiagram, drawGradientDescent, drawRocketry,
         drawNeuralNet, drawFSM, drawKalman, drawDockerStack,
         drawHexGrid, drawSierpinski, drawGaussian, drawGameOfLife,
         drawCollabRobots, drawCodeHumor,
     ];
+    if (smallScreen) {
+        const HEAVY = new Set([0, 1, 3, 6, 8]);
+        MODE_LABELS = MODE_LABELS.filter((_, i) => !HEAVY.has(i));
+        MODES       = MODES.filter((_, i) => !HEAVY.has(i));
+    }
     const N = MODES.length;
 
     function drawModeLabel(modeT, idx) {
@@ -1972,7 +1983,7 @@
     }
 
     /* ── CSS grid visibility (hidden during hex canvas mode) ───────────────── */
-    const HEX_IDX = 10; // index of drawHexGrid in MODES
+    const HEX_IDX = MODES.indexOf(drawHexGrid); // -1 if filtered out on small screens
     function setCSSGridVisible(show) {
         if (gridLinesEl) gridLinesEl.style.opacity = show ? '' : '0';
         if (gridGlowEl)  gridGlowEl.style.opacity  = show ? '' : '0';
@@ -2061,9 +2072,6 @@
     window.addEventListener('resize', resize);
     modeIdx = pickNextMode(); // random first mode on every page load
     resize();
-    // 8-second startup delay before canvas animations begin
-    setTimeout(() => {
-        started = true;
-        rafId = requestAnimationFrame(ts => { lastTs = ts; rafId = requestAnimationFrame(frame); });
-    }, 8000);
+    started = true;
+    rafId = requestAnimationFrame(ts => { lastTs = ts; rafId = requestAnimationFrame(frame); });
 }());

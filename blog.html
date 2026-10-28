@@ -10,7 +10,7 @@
     <link href="blog.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Space+Grotesk:wght@500;600;700&family=VT323&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.34.0/dist/tabler-icons.min.css"
           integrity="sha384-8zE3cHqgn3iJlsilASXr1IcXFP7TnplbXZSbvKuaUYjPUpcK7QhlyLE/cY7lIBTp" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js"
@@ -19,10 +19,20 @@
     <script>window.__BLOG_API_URL__ = '';</script>
 </head>
 <body id="top">
+    <script>
+    (function(){try{var l=localStorage.getItem('cs-layout');if(l==='formal'||l==='indieweb')document.body.classList.add('layout-'+l);}catch(e){}})();
+    </script>
     <!-- Background effects (shared with main site) -->
     <div class="cyber-bg" aria-hidden="true">
         <div class="cyber-gradient"></div>
         <div class="matrix-rain" id="matrixRain"></div>
+    </div>
+    <div class="mesh-bg" aria-hidden="true">
+        <div class="mesh-blob mesh-blob-1"></div>
+        <div class="mesh-blob mesh-blob-2"></div>
+        <div class="mesh-blob mesh-blob-3"></div>
+        <div class="mesh-blob mesh-blob-4"></div>
+        <div class="mesh-grain"></div>
     </div>
     <div class="particles" id="particlesContainer" aria-hidden="true"></div>
     <div class="data-streams" id="dataStreams" aria-hidden="true"></div>
@@ -51,6 +61,7 @@
                     <span class="btn-content">IRC Room</span>
                     <span class="btn-glitch"></span>
                 </a>
+                <button type="button" id="layoutToggleBtn" class="layout-toggle" aria-label=""><i class="ti ti-contrast" aria-hidden="true"></i></button>
             </div>
         </div>
     </nav>
@@ -72,6 +83,7 @@
 
                 <div class="blog-status-bar" id="blogStatusBar">
                     <span id="blogStatusText">CONNECTING TO BACKEND…</span>
+                    <button type="button" class="sa-trigger" data-submit-trigger>[ SUBMIT ARTICLE ]</button>
                 </div>
 
                 <div class="blog-grid" id="blogGrid">
@@ -122,5 +134,9 @@
     <script src="ControlSystems.js"></script>
     <script src="grid-fx.js"></script>
     <script src="blog.js"></script>
+    <script src="submit-article.js"></script>
+    <script src="backend-watch.js"></script>
+    <script src="layout-toggle.js"></script>
+    <script src="context-menu.js"></script>
 </body>
 </html>

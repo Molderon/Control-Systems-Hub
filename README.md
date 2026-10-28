@@ -64,11 +64,11 @@ Browser
 │   ├── .env.example           Environment variable template
 │   ├── package.json
 │   └── README.md              Backend setup guide
-├── Backend system/            NixOS configuration for the host machine (Dedalus)
+├── Backend system/            NixOS configuration for the host machine (Daedalus)
 │   ├── flake.nix
 │   ├── configuration.nix
 │   ├── modules/
-│   │   ├── services.nix       ddl-backend · ddl-cloudflared · ddl-ergo systemd services
+│   │   ├── services.nix       ddl-backend · ddl-cloudflared systemd units + services.ergochat
 │   │   ├── packages.nix
 │   │   └── desktop.nix        XFCE + XRDP (LAN remote desktop)
 │   └── SETUP.md               Full installation guide
@@ -115,14 +115,13 @@ Full setup walkthrough: [`Backend system/SETUP.md`](Backend%20system/SETUP.md)
 
 | Step | Command |
 |---|---|
-| Fresh install | `nixos-install --flake /mnt/etc/nixos#dedalus` |
-| Apply changes | `sudo nixos-rebuild switch --flake /etc/nixos#dedalus` |
+| Fresh install | `nixos-install --flake /mnt/etc/nixos#daedalus` |
+| Apply changes | `sudo nixos-rebuild switch --flake /etc/nixos#daedalus` |
 | Install deps | `cd backend && npm install` |
 | Backend env | `/etc/ddl-backend/backend.env` (see `.env.example`) |
 | CF Tunnel token | `/etc/cloudflared/tunnel.env` |
-| Ergo binary | `wget` from github.com/ergochat/ergo/releases → `/opt/ergo/ergo` |
-| Ergo config | copy `backend/ergo/ircd.yaml` → `/opt/ergo/ircd.yaml`, fill 3 placeholders |
-| View logs | `journalctl -u ddl-backend -f` · `journalctl -u ddl-ergo -f` |
+| Ergo | Managed by NixOS `services.ergochat` (see `modules/services.nix`); state DB at `/var/lib/ergochat/ergo.db`. `backend/ergo/ircd.yaml` is a legacy reference. |
+| View logs | `journalctl -u ddl-backend -f` · `journalctl -u ergochat -f` |
 
 ### Backend environment variables (`/etc/ddl-backend/backend.env`)
 

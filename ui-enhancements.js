@@ -71,6 +71,12 @@
                 }, 520);
             }, 320);
         });
+
+        wrap.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (isAnimating) return;
+            wrap.dispatchEvent(new MouseEvent(logoVisible ? 'mouseleave' : 'mouseenter'));
+        }, { passive: false });
     }
 
     function initTabs() {
@@ -90,12 +96,20 @@
         const bodyEl    = document.querySelector('.term-panel-body');
 
         const labels = {
-            performance: { title: 'DOMAINS.DAT',      status: 'LOADED — RESEARCH DOMAINS' },
-            security:    { title: 'PUBLICATIONS.DAT', status: 'LOADED — PUBLICATIONS' },
-            network:     { title: 'HOMEBREW.DAT',    status: 'LOADED — HOME BREW' },
-            analytics:   { title: 'HACKATHON.DAT',    status: 'LOADED — HACKATHON' },
-            integration: { title: 'THESIS.DAT',       status: 'LOADED — THESIS TOPICS' },
+            performance: { title: 'DOMAINS.DAT',      status: 'LOADED — RESEARCH DOMAINS', accent: '#00ffff', accentRgb: '0, 255, 255'   },
+            security:    { title: 'PUBLICATIONS.DAT', status: 'LOADED — PUBLICATIONS',     accent: '#ff00ff', accentRgb: '255, 0, 255'   },
+            network:     { title: 'HOMEBREW.DAT',     status: 'LOADED — HOME BREW',        accent: '#a78bfa', accentRgb: '167, 139, 250' },
+            analytics:   { title: 'HACKATHON.DAT',    status: 'LOADED — HACKATHON',        accent: '#f97316', accentRgb: '249, 115, 22'  },
+            integration: { title: 'THESIS.DAT',       status: 'LOADED — THESIS TOPICS',    accent: '#22d3ee', accentRgb: '34, 211, 238'  },
         };
+
+        const featuresRoot = document.getElementById('features');
+        const applyAccent = (meta) => {
+            if (!featuresRoot || !meta) return;
+            if (meta.accent)    featuresRoot.style.setProperty('--feature-accent',     meta.accent);
+            if (meta.accentRgb) featuresRoot.style.setProperty('--feature-accent-rgb', meta.accentRgb);
+        };
+        applyAccent(labels.performance);
 
         freshTabs.forEach(tab => {
             if (!tab.querySelector('.tab-scan')) {
@@ -125,15 +139,18 @@
                 const meta = labels[targetId];
                 if (meta && titleEl)  titleEl.textContent  = meta.title;
                 if (meta && statusEl) statusEl.textContent = meta.status;
+                applyAccent(meta);
             });
         });
     }
 
     function initProfileCards() {
-        document.querySelectorAll('.pricing-card[data-profile]').forEach(card => {
-            card.addEventListener('click', () => {
-                window.location.href = card.dataset.profile + '.html';
-            });
+        const grid = document.getElementById('pricing-grid');
+        if (!grid) return;
+        grid.addEventListener('click', (e) => {
+            const card = e.target.closest('.pricing-card[data-profile]');
+            if (!card) return;
+            window.location.href = 'member.html?slug=' + card.dataset.profile;
         });
     }
 

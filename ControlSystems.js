@@ -496,33 +496,6 @@ setInterval(() => {
     });
 })();
 
-/* ── Language Toggle ─────────────────────────────────────────── */
-(function initLangToggle() {
-    const btn   = document.getElementById('langToggle');
-    const optEN = document.getElementById('langEN');
-    const optBG = document.getElementById('langBG');
-    if (!btn || !optEN || !optBG) return;
-
-    let current = localStorage.getItem('cs-lang') || 'EN';
-
-    function applyLang(lang) {
-        current = lang;
-        optEN.classList.toggle('lang-active', lang === 'EN');
-        optBG.classList.toggle('lang-active', lang === 'BG');
-        localStorage.setItem('cs-lang', lang);
-        document.documentElement.lang = lang === 'BG' ? 'bg' : 'en';
-    }
-
-    applyLang(current);
-
-    btn.addEventListener('click', () => {
-        const next = current === 'EN' ? 'BG' : 'EN';
-        btn.classList.add('glitching');
-        btn.addEventListener('animationend', () => btn.classList.remove('glitching'), { once: true });
-        applyLang(next);
-    });
-})();
-
 /* ── Blog Portal ─────────────────────────────────────────────── */
 (function initBlogPortal() {
     const openBtn  = document.getElementById('blogOpenBtn');

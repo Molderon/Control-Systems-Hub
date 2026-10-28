@@ -100,6 +100,11 @@
     border-bottom: 1px solid rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.15);
     padding-bottom: 16px;
     margin-bottom: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
 .blog-status-bar.ok   #blogStatusText { color: #4ade80; }
@@ -473,6 +478,34 @@
     box-shadow: 0 0 12px rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.1);
 }
 
+/* ── Markdown tables ─────────────────────────────────────────── */
+.md-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.4rem 0 1.8rem;
+    font-size: 0.85rem;
+    border: 1px solid rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.35);
+    background: rgba(0, 0, 0, 0.2);
+}
+.md-table thead { background: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.08); }
+.md-table th,
+.md-table td {
+    padding: 0.55rem 0.85rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.14);
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+.md-table th {
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    color: var(--primary-cyan);
+}
+.md-table tbody tr:last-child td { border-bottom: none; }
+.md-table tbody tr:hover { background: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.04); }
+
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 768px) {
     .blog-list-section,
@@ -483,4 +516,8 @@
     .blog-article-header,
     .blog-article-body,
     .blog-article-attachments { padding: 24px; }
+
+    .md-table { font-size: 0.78rem; }
+    .md-table th,
+    .md-table td { padding: 0.45rem 0.6rem; }
 }

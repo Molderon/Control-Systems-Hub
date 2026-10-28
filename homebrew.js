@@ -22,9 +22,15 @@
         const tagHtml   = tags.map(t  => `<span class="hb-tag">${t}</span>`).join('');
         const stackHtml = stack.map(t => `<span class="hb-stack-badge">${t}</span>`).join('');
 
+        const repoUrl   = meta.github || '';
+        const external  = repoUrl ? ' external-link" tabindex="0" role="link" aria-label="Open repository for ' +
+                                    (meta.name || slug) + '" data-repo="' + repoUrl + '"' : '"';
+        const badgeHtml = repoUrl ? '<span class="hb-repo-badge">[ REPO <span class="hb-repo-arrow">→</span> ]</span>' : '';
+
         return `
-        <div class="hb-card" data-slug="${slug}">
+        <div class="hb-card${external} data-slug="${slug}">
             <div class="hb-logo-bg"></div>
+            ${badgeHtml}
             <div class="hb-card-inner">
                 <div class="hb-card-header">
                     <span class="hb-name">${meta.name || slug}</span>
@@ -34,12 +40,29 @@
                 <div class="hb-tags">${tagHtml}</div>
                 <div class="hb-footer">
                     <div class="hb-stack">${stackHtml}</div>
-                    <a href="${meta.github || '#'}" target="_blank" rel="noopener" class="hb-github-link">
+                    <a href="${repoUrl || '#'}" target="_blank" rel="noopener" class="hb-github-link">
                         <i class="ti ti-brand-github"></i> ${meta.lead || ''}
                     </a>
                 </div>
             </div>
         </div>`;
+    }
+
+    function attachRepoHandlers(grid) {
+        grid.querySelectorAll('.hb-card.external-link[data-repo]').forEach(card => {
+            const url = card.dataset.repo;
+            if (!url) return;
+            card.addEventListener('click', e => {
+                if (e.target.closest('a')) return;
+                window.open(url, '_blank', 'noopener');
+            });
+            card.addEventListener('keydown', e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    window.open(url, '_blank', 'noopener');
+                }
+            });
+        });
     }
 
     function init() {
@@ -62,6 +85,8 @@
                 grid.innerHTML = valid.length
                     ? valid.map(p => buildCard(p.slug, p.meta)).join('')
                     : '<p class="hb-empty">// no projects indexed</p>';
+
+                attachRepoHandlers(grid);
 
                 grid.querySelectorAll('.hb-card').forEach(card => {
                     const slug   = card.dataset.slug;

@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>About — Control Systems, TU-Sofia Plovdiv</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Space+Grotesk:wght@500;600;700&family=VT323&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.34.0/dist/tabler-icons.min.css"
+          integrity="sha384-8zE3cHqgn3iJlsilASXr1IcXFP7TnplbXZSbvKuaUYjPUpcK7QhlyLE/cY7lIBTp" crossorigin="anonymous">
     <link href="css/variables.css" rel="stylesheet">
     <link href="ControlSystems.css" rel="stylesheet">
     <style>
@@ -270,8 +275,18 @@
     </style>
 </head>
 <body id="top">
+    <script>
+    (function(){try{var l=localStorage.getItem('cs-layout');if(l==='formal'||l==='indieweb')document.body.classList.add('layout-'+l);}catch(e){}})();
+    </script>
     <div class="cyber-bg" aria-hidden="true">
         <div class="cyber-gradient"></div>
+    </div>
+    <div class="mesh-bg" aria-hidden="true">
+        <div class="mesh-blob mesh-blob-1"></div>
+        <div class="mesh-blob mesh-blob-2"></div>
+        <div class="mesh-blob mesh-blob-3"></div>
+        <div class="mesh-blob mesh-blob-4"></div>
+        <div class="mesh-grain"></div>
     </div>
     <div class="grid-overlay" aria-hidden="true"><div class="grid-lines"></div><div class="grid-glow"></div></div>
     <div class="scanlines" aria-hidden="true"></div>
@@ -286,10 +301,13 @@
                 <li><a href="index.html#features">Contents</a></li>
             </ul>
             <div class="nav-bottom">
-                <a href="irc.html" class="cyber-button">
-                    <span class="btn-content">IRC Room</span>
-                    <span class="btn-glitch"></span>
-                </a>
+                <div class="has-tooltip" data-tooltip="[ECONNREFUSED] port 6697 offline — session pending">
+                    <a href="irc.html" class="cyber-button">
+                        <span class="btn-content">IRC Room</span>
+                        <span class="btn-glitch"></span>
+                    </a>
+                </div>
+                <button type="button" id="layoutToggleBtn" class="layout-toggle" aria-label=""><i class="ti ti-contrast" aria-hidden="true"></i></button>
             </div>
         </div>
     </nav>
@@ -413,7 +431,16 @@
         <p class="about-footer-note">ctrl-sys-site · tu-sofia plovdiv · open source</p>
     </main>
 
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2026 Technical University of Sofia, branch Plovdiv. | All rights reserved (mostly).</p>
+        </div>
+    </footer>
+
     <script src="ControlSystems.js"></script>
     <script src="ui-enhancements.js"></script>
+    <script src="backend-watch.js"></script>
+    <script src="layout-toggle.js"></script>
+    <script src="context-menu.js"></script>
 </body>
 </html>

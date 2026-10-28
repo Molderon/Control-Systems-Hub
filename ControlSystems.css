@@ -1,9 +1,12 @@
         body {
-            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-family: var(--font-body, 'Inter', ui-sans-serif, system-ui, sans-serif);
             background: var(--darker-bg);
             color: var(--text-primary);
-            line-height: 1.6;
+            line-height: 1.65;
+            letter-spacing: 0;
             overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         /* Enhanced Cyberpunk Background */
@@ -16,6 +19,64 @@
             background: var(--darker-bg);
             overflow: hidden;
             z-index: -5;
+        }
+
+        /* ── Mesh background: 4 soft blobs + grain overlay (ref: typesafe.ai) ── */
+        .mesh-bg {
+            position: fixed;
+            inset: 0;
+            z-index: -4;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        .mesh-blob {
+            position: absolute;
+            width: 65vw;
+            height: 65vw;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.22;
+            will-change: transform;
+        }
+        .mesh-blob-1 { top: -20%; left: -10%;
+            background: radial-gradient(circle, #22d3ee 0%, transparent 60%);
+            animation: meshDrift1 48s ease-in-out infinite; }
+        .mesh-blob-2 { top: 25%; right: -18%;
+            background: radial-gradient(circle, #8b5cf6 0%, transparent 60%);
+            animation: meshDrift2 56s ease-in-out infinite; }
+        .mesh-blob-3 { bottom: -25%; left: 18%;
+            background: radial-gradient(circle, #00ffff 0%, transparent 60%);
+            opacity: 0.16;
+            animation: meshDrift3 60s ease-in-out infinite; }
+        .mesh-blob-4 { top: 35%; left: 28%;
+            background: radial-gradient(circle, #164e63 0%, transparent 60%);
+            opacity: 0.26;
+            animation: meshDrift4 44s ease-in-out infinite; }
+
+        @keyframes meshDrift1 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(10vw, 8vh) scale(1.15); } }
+        @keyframes meshDrift2 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-12vw, -6vh) scale(1.10); } }
+        @keyframes meshDrift3 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(6vw, -8vh) scale(1.20); } }
+        @keyframes meshDrift4 { 0%,100% { transform: translate(0,0) scale(0.9); } 50% { transform: translate(-8vw, 10vh) scale(1.05); } }
+
+        .mesh-grain {
+            position: absolute;
+            inset: 0;
+            opacity: 0.08;
+            mix-blend-mode: overlay;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.55'/></svg>");
+        }
+
+        /* Formal: muted palette, lower alpha */
+        body.layout-formal .mesh-blob { opacity: 0.10; filter: blur(120px); }
+        body.layout-formal .mesh-blob-1 { background: radial-gradient(circle, #22d3ee 0%, transparent 60%); }
+        body.layout-formal .mesh-blob-2 { background: radial-gradient(circle, #0369a1 0%, transparent 60%); }
+        body.layout-formal .mesh-blob-3 { background: radial-gradient(circle, #22d3ee 0%, transparent 60%); opacity: 0.07; }
+        body.layout-formal .mesh-blob-4 { background: radial-gradient(circle, #164e63 0%, transparent 60%); opacity: 0.09; }
+        body.layout-formal .mesh-grain { opacity: 0.05; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .mesh-blob { animation: none !important; }
         }
         .metaphor-quote {
     font-size: 0.9em;          /* Makes the text a bit smaller */
@@ -358,12 +419,12 @@
             position: fixed;
             top: 0;
             width: 100%;
-            padding: 1rem 2rem;
+            padding: 10px var(--sp-6, 32px);
             background: var(--nav-bg);
             backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border-color);
             z-index: 10000;
-            transition: all 0.3s ease;
+            transition: top 0.3s ease, background 0.3s ease;
         }
 
         .nav-container {
@@ -703,8 +764,10 @@
         }
 
         .logo {
+            font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
             font-size: 1.8rem;
             font-weight: 700;
+            letter-spacing: -0.01em;
             color: var(--primary-cyan);
             text-shadow: 0 0 20px var(--primary-cyan);
             position: relative;
@@ -798,11 +861,12 @@
         }
 
         .hero-title {
+            font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
             font-size: clamp(3rem, 8vw, 6rem);
-            font-weight: 900;
+            font-weight: 700;
             margin-bottom: 2rem;
             text-transform: uppercase;
-            letter-spacing: 3px;
+            letter-spacing: 2px;
             position: relative;
             cursor: pointer;
             line-height: 1.2;
@@ -821,17 +885,15 @@
         }
 
         .hero-flow {
-            background: linear-gradient(135deg, var(--primary-purple), var(--primary-pink));
-            background: -webkit-linear-gradient(135deg, var(--primary-purple), var(--primary-pink));
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #f97316;
             margin-left: 0.1em;
             display: inline-block;
             transition: all 0.3s ease;
             animation: purplePulse 3s ease-in-out infinite;
             animation-delay: 1.5s;
             position: relative;
+            /* purplePulse drop-shadow glow aimed at orange */
+            --accent2-r: 249; --accent2-g: 115; --accent2-b: 22;
         }
 
         @keyframes cyanPulse {
@@ -1641,6 +1703,20 @@
             font-size: 1rem;
         }
 
+        .pf-appointment {
+            color: var(--primary-cyan);
+            text-decoration: none;
+            border-bottom: 1px dashed rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.4);
+            transition: border-color 0.2s ease, color 0.2s ease;
+        }
+
+        .pf-appointment:hover,
+        .pf-appointment:focus-visible {
+            color: #ffffff;
+            border-bottom-color: var(--primary-cyan);
+            outline: none;
+        }
+
         /* Kernel process card footer */
         .card-proc-footer {
             margin-top: auto;
@@ -1705,8 +1781,14 @@
         }
 
         .pricing-card:hover .card-proc-legend {
-            max-height: 80px;
+            max-height: 36px;
             opacity: 1;
+        }
+
+        @media (max-width: 480px) {
+            .card-proc-name {
+                font-size: 0.5rem;
+            }
         }
 
         .card-legend-row {
@@ -3010,6 +3092,10 @@
     .pricing-card {
         padding: 1.5rem 1.2rem;
     }
+    .pricing-card.featured {
+        transform: none;
+        scale: 1;
+    }
     .hero {
         padding: 100px 1rem 60px;
     }
@@ -3026,62 +3112,6 @@
     display: flex;
     align-items: center;
     gap: 12px;
-}
-
-.lang-toggle {
-    background: transparent;
-    border: 1px solid rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.35);
-    color: var(--text-secondary);
-    font-family: inherit;
-    margin-left: 1.5rem;
-    font-size: 0.82rem;
-    font-weight: 700;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    padding: 0.5rem 1rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
-    position: relative;
-    overflow: hidden;
-}
-
-.lang-toggle:hover {
-    border-color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.7);
-    box-shadow: 0 0 12px rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.18);
-}
-
-.lang-opt {
-    transition: color 0.2s ease, opacity 0.2s ease, text-shadow 0.2s ease;
-    opacity: 0.4;
-}
-
-.lang-opt.lang-active {
-    color: var(--primary-cyan);
-    opacity: 1;
-    text-shadow: 0 0 8px var(--primary-cyan);
-}
-
-.lang-sep {
-    opacity: 0.25;
-    font-size: 0.6rem;
-}
-
-@keyframes langGlitch {
-    0%   { opacity: 1;   transform: none; }
-    15%  { opacity: 0;   transform: translateX(3px) skewX(5deg); }
-    30%  { opacity: 0.7; transform: translateX(-2px); }
-    50%  { opacity: 0;   transform: translateX(1px); }
-    70%  { opacity: 0.9; transform: translateX(-1px); }
-    85%  { opacity: 1;   transform: none; }
-    100% { opacity: 1;   transform: none; }
-}
-
-.lang-toggle.glitching {
-    animation: langGlitch 0.32s ease forwards;
 }
 
 /* ── Blog Portal Modal ───────────────────────────────────────── */
@@ -3319,4 +3349,1070 @@
     opacity: 1;
     text-shadow: 0 0 8px var(--primary-cyan);
 }
+
+.blog-portal-role {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.blog-portal-role-label {
+    font-size: 0.58rem;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.55);
+}
+
+.blog-portal-role--author {
+    gap: 16px;
+    padding: 14px;
+    border: 1px dashed rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.18);
+    background: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.025);
+}
+
+.blog-portal-submit-wrap {
+    text-align: center;
+}
+
+/* ── Backend-disconnected banner + degraded UI ──────────────────────── */
+#backend-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 25000;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 20px;
+    background: linear-gradient(90deg, rgba(249, 115, 22, 0.14), rgba(249, 115, 22, 0.04));
+    border-bottom: 1px solid rgba(249, 115, 22, 0.4);
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    box-shadow: 0 0 20px rgba(249, 115, 22, 0.15);
+}
+
+#backend-banner .bb-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--primary-orange);
+    box-shadow: 0 0 8px var(--primary-orange);
+    animation: dotBlink 1.6s step-start infinite;
+    flex-shrink: 0;
+}
+
+#backend-banner .bb-label {
+    font-weight: 700;
+    color: var(--primary-orange);
+}
+
+#backend-banner .bb-sub {
+    opacity: 0.75;
+    letter-spacing: 1.5px;
+    text-transform: none;
+    font-size: 0.56rem;
+}
+
+@media (max-width: 640px) {
+    #backend-banner .bb-sub { display: none; }
+    #backend-banner { padding: 8px 14px; }
+}
+
+body.backend-down { padding-top: 36px; }
+body.backend-down nav { top: 36px; }
+
+body.backend-down .blog-portal-sub,
+body.backend-down [data-submit-trigger] {
+    display: none !important;
+}
+
+body.backend-down .blog-portal-role--author {
+    opacity: 0.55;
+    position: relative;
+}
+
+body.backend-down .blog-portal-role--author::after {
+    content: '// paused — backend offline';
+    display: block;
+    text-align: center;
+    font-size: 0.6rem;
+    letter-spacing: 2px;
+    color: var(--primary-orange);
+    opacity: 0.75;
+}
+
+/* blog.html condensed view */
+body.backend-down #blogGrid { display: none; }
+body.backend-down #blogEmpty { display: block !important; }
+body.backend-down #blogEmpty p { display: none; }
+body.backend-down #blogEmpty::after {
+    content: '// backend offline — publications will return shortly';
+    display: block;
+    text-align: center;
+    color: var(--primary-orange);
+    margin-top: 14px;
+    font-size: 0.72rem;
+    letter-spacing: 2px;
+    text-transform: lowercase;
+}
+body.backend-down #blogStatusText::before { content: '// '; }
+body.backend-down #blogStatusText { color: var(--primary-orange); }
+
+/* ──────────────────────────────────────────────────────────────────── */
+/* ── Opening curtain                                                ── */
+/* ──────────────────────────────────────────────────────────────────── */
+
+body.curtain-locked { overflow: hidden; }
+
+.site-curtain {
+    position: fixed;
+    inset: 0;
+    z-index: 20000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: radial-gradient(ellipse at center, rgba(26, 11, 46, 0.98), rgba(10, 5, 20, 0.995));
+    backdrop-filter: blur(14px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.site-curtain.curtain-exit {
+    opacity: 0;
+    transform: scale(1.02);
+    pointer-events: none;
+}
+
+.site-curtain::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        0deg, transparent, transparent 3px,
+        rgba(0, 0, 0, 0.08) 3px, rgba(0, 0, 0, 0.08) 4px
+    );
+    pointer-events: none;
+}
+
+.curtain-inner {
+    position: relative;
+    text-align: center;
+    max-width: 540px;
+    padding: 40px 32px;
+    border: 1px solid rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.35);
+    background: rgba(10, 5, 20, 0.6);
+    clip-path: polygon(22px 0%, 100% 0%, 100% calc(100% - 22px), calc(100% - 22px) 100%, 0% 100%, 0% 22px);
+    box-shadow: 0 0 60px rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.15);
+    animation: curtainIn 0.65s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+@keyframes curtainIn {
+    from { opacity: 0; transform: translateY(14px) scale(0.985); }
+    to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+.curtain-prompt {
+    font-size: 0.6rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.55);
+    margin-bottom: 18px;
+}
+
+.curtain-title {
+    font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+    font-size: clamp(2rem, 6vw, 3.4rem);
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin: 0 0 6px;
+    line-height: 1.05;
+}
+
+.curtain-title-nexus { color: var(--primary-cyan); text-shadow: 0 0 14px rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.6); }
+.curtain-title-flow  { color: #f97316; text-shadow: 0 0 14px rgba(249, 115, 22, 0.6); }
+
+.curtain-subtitle {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-style: italic;
+    letter-spacing: 3px;
+    margin: 0 0 22px;
+}
+
+.curtain-boot {
+    list-style: none;
+    padding: 0;
+    margin: 4px auto 16px;
+    display: inline-block;
+    text-align: left;
+    font-family: 'VT323', 'Courier New', monospace;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    letter-spacing: 1px;
+    color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.42);
+}
+
+.curtain-boot-line {
+    white-space: nowrap;
+    opacity: 0;
+    animation: curtainBootFade 0.5s ease-out forwards;
+    transition: opacity 0.32s ease;
+}
+.curtain-boot-line:nth-child(1) { animation-delay: 0.55s; }
+.curtain-boot-line:nth-child(2) { animation-delay: 1.00s; }
+.curtain-boot-line:nth-child(3) { animation-delay: 1.45s; }
+
+.cb-tag { color: #22c55e; margin-right: 6px; }
+
+@keyframes curtainBootFade {
+    from { opacity: 0; transform: translateX(-4px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .curtain-boot-line { opacity: 1; animation: none !important; transform: none; }
+}
+
+body.layout-formal .curtain-boot {
+    font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+    letter-spacing: 0;
+    color: var(--gh-fg-subtle, rgba(255, 255, 255, 0.45));
+}
+body.layout-formal .cb-tag { color: #3fb950; }
+
+.curtain-divider {
+    font-size: 0.6rem;
+    letter-spacing: 2px;
+    color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.3);
+    text-transform: uppercase;
+    margin-bottom: 18px;
+}
+
+.curtain-style-toggle {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+}
+
+.curtain-style-btn {
+    flex: 1 1 180px;
+    min-width: 160px;
+    padding: 14px 16px;
+    background: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.04);
+    border: 1px solid rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.25);
+    color: var(--text-secondary);
+    font-family: inherit;
+    cursor: pointer;
+    clip-path: polygon(10px 0%, 100% 0%, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0% 100%, 0% 10px);
+    transition: border-color 0.25s, background 0.25s, color 0.25s, transform 0.25s;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.curtain-style-btn:hover {
+    border-color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.5);
+    background: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.08);
+    color: var(--text-primary);
+    transform: translateY(-2px);
+}
+
+.curtain-style-btn.active {
+    border-color: var(--primary-cyan);
+    background: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.14);
+    color: var(--primary-cyan);
+    box-shadow: 0 0 22px rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.2);
+}
+
+.curtain-style-btn .csb-label {
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.curtain-style-btn .csb-desc {
+    font-size: 0.56rem;
+    letter-spacing: 1.5px;
+    opacity: 0.65;
+    text-transform: lowercase;
+}
+
+.curtain-enter {
+    display: inline-block;
+    padding: 12px 36px;
+    background: linear-gradient(135deg,
+        rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.14),
+        rgba(var(--accent2-r), var(--accent2-g), var(--accent2-b), 0.08));
+    border: 1px solid var(--primary-cyan);
+    color: var(--primary-cyan);
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    cursor: pointer;
+    clip-path: polygon(14px 0%, 100% 0%, calc(100% - 14px) 100%, 0% 100%);
+    transition: background 0.25s, color 0.25s, box-shadow 0.25s, transform 0.25s;
+    margin-bottom: 24px;
+}
+
+.curtain-enter:hover,
+.curtain-enter:focus-visible {
+    background: linear-gradient(135deg,
+        rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.3),
+        rgba(var(--accent2-r), var(--accent2-g), var(--accent2-b), 0.18));
+    color: var(--text-primary);
+    box-shadow: 0 0 28px rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.35);
+    transform: translateY(-1px);
+    outline: none;
+}
+
+.curtain-footnote {
+    font-size: 0.52rem;
+    color: var(--text-secondary);
+    opacity: 0.55;
+    display: table;
+    margin: 0 auto;
+    text-transform: lowercase;
+}
+
+/* ──────────────────────────────────────────────────────────────────── */
+/* ── Forum layout (v1 — strips ambient effects, cleaner typography) ── */
+/* ──────────────────────────────────────────────────────────────────── */
+
+body.layout-formal .matrix-rain,
+body.layout-formal .particles,
+body.layout-formal .data-streams,
+body.layout-formal .orb,
+body.layout-formal .grid-overlay,
+body.layout-formal .scanlines,
+body.layout-formal .noise-overlay,
+body.layout-formal .cyber-gradient {
+    display: none !important;
+}
+
+body.layout-formal {
+    background: #141420;
+}
+
+body.layout-formal nav {
+    background: rgba(20, 20, 32, 0.94);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+body.layout-formal .hero-title,
+body.layout-formal .plan-name,
+body.layout-formal .curtain-title-nexus,
+body.layout-formal .curtain-title-flow {
+    text-shadow: none !important;
+    background: none !important;
+    -webkit-background-clip: initial !important;
+    -webkit-text-fill-color: initial !important;
+    color: var(--text-primary) !important;
+}
+
+body.layout-formal .hero-subtitle,
+body.layout-formal .curtain-subtitle {
+    font-style: normal;
+    letter-spacing: 0.5px;
+}
+
+body.layout-formal .cyber-button,
+body.layout-formal .blog-sub-btn,
+body.layout-formal .sa-trigger,
+body.layout-formal .curtain-enter,
+body.layout-formal .curtain-style-btn {
+    clip-path: none !important;
+    border-radius: 4px !important;
+    animation: none !important;
+    text-transform: none;
+    letter-spacing: 1px;
+}
+
+body.layout-formal .blog-portal,
+body.layout-formal .pricing-card,
+body.layout-formal .hb-card,
+body.layout-formal .pub-card,
+body.layout-formal .feature-content,
+body.layout-formal .curtain-inner {
+    clip-path: none !important;
+    border-radius: 6px;
+}
+
+body.layout-formal .term-blink,
+body.layout-formal .card-status-dot,
+body.layout-formal #backend-banner .bb-dot {
+    animation: none !important;
+}
+
+/* Forum typography — section headings and hero */
+body.layout-formal .section-title {
+    font-size: var(--fs-h2, 2.1rem);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+    text-shadow: none;
+    color: var(--text-primary);
+    text-transform: none;
+    margin-bottom: var(--sp-5, 24px);
+}
+
+body.layout-formal .section-title::after {
+    width: 48px;
+    height: 2px;
+    bottom: -8px;
+    background: var(--text-secondary);
+    box-shadow: none;
+    opacity: 0.3;
+}
+
+body.layout-formal .hero-title {
+    letter-spacing: -0.01em;
+    line-height: 1.05;
+}
+
+body.layout-formal .hero-subtitle {
+    font-size: var(--fs-lead, 1.2rem);
+    letter-spacing: 0;
+    opacity: 0.85;
+}
+
+/* Forum nav */
+body.layout-formal nav {
+    padding: 10px var(--sp-6, 32px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+body.layout-formal .nav-links a {
+    letter-spacing: 0.3px;
+    text-transform: none;
+    font-size: var(--fs-sm, 0.84rem);
+    font-weight: 500;
+}
+
+body.layout-formal .nav-links a:hover {
+    color: var(--primary-cyan);
+    text-shadow: none;
+}
+
+body.layout-formal .logo {
+    text-shadow: none;
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+
+body.layout-formal .logo:hover { text-shadow: none; }
+
+/* Forum body + paragraph rhythm */
+body.layout-formal p {
+    max-width: 68ch;
+}
+
+body.layout-formal .footer p,
+body.layout-formal .footer-content p {
+    max-width: none;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.footer-content p { margin: 0 auto; max-width: fit-content; }
+
+body.layout-formal .hero p,
+body.layout-formal .pricing-container p,
+body.layout-formal .about-text p {
+    line-height: 1.65;
+    letter-spacing: 0;
+}
+
+/* Keep terminal zones monospaced even in forum mode (identity preserved) */
+.term-panel,
+.term-panel-header,
+.win-title-text,
+.win-status-bar,
+.term-prompt,
+.help-line,
+.card-proc-bar,
+.card-proc-name,
+.card-legend-text,
+.hb-stack-badge,
+.hb-tag,
+.pub-badge,
+.phover-field,
+.phover-date-row,
+.blog-portal-header,
+.blog-portal-divider,
+.curtain-prompt,
+.curtain-divider,
+.curtain-footnote,
+.profile-log,
+.pm-key {
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+}
+
+/* Reduce overly-tracked identity classes everywhere (not just forum) */
+.nav-links a { letter-spacing: 0.5px; }
+.section-title { letter-spacing: 1px; }
+.hero-subtitle { letter-spacing: 0.5px; }
+
+/* ══════════════════════════════════════════════════════════════════════ */
+/* ══ Forum layout — GitHub Primer dark palette + stop-slop refinements ══ */
+/* ══════════════════════════════════════════════════════════════════════ */
+
+/*
+ * Scope: only when body.layout-formal is active.
+ * IndieWeb layout is NOT touched by any rule in this block.
+ *
+ * Design decisions (stop-slop):
+ *  - Two font families: Inter (body/UI) + Newsreader (display headings).
+ *  - Two Inter weights: 400, 700. Newsreader at 500 only.
+ *  - Three radius tiers: input (4px), card (6px), panel (10px). Pills 999px.
+ *  - Accent colour (#2f81f7) restricted to links + one primary CTA per view.
+ *  - Layered shadows, never plain rgba(0,0,0,.1).
+ *  - Signature move: section headings get a thin accent-coloured left border
+ *    (echoes a git diff marker — distinctive, academic/technical).
+ */
+
+body.layout-formal {
+    --dark-bg:         var(--gh-canvas-subtle);
+    --darker-bg:       var(--gh-canvas);
+    --card-bg:         var(--gh-canvas-subtle);
+    --border-color:    var(--gh-border);
+    --text-primary:    var(--gh-fg);
+    --text-secondary:  var(--gh-fg-muted);
+    --primary-cyan:    var(--gh-accent);
+    --primary-pink:    var(--gh-accent-emphasis);
+    --primary-purple:  var(--gh-accent-emphasis);
+    --primary-orange:  var(--gh-attention);
+    --nav-bg:          rgba(13, 17, 23, 0.85);
+    --accent-r: 47;   --accent-g: 129; --accent-b: 247;
+    --accent2-r: 31;  --accent2-g: 111; --accent2-b: 235;
+
+    background: var(--gh-canvas);
+    color: var(--gh-fg);
+}
+
+body.layout-formal ::selection {
+    background: var(--gh-accent-emphasis);
+    color: #ffffff;
+}
+
+/* Headings — Space Grotesk display, balanced wrap (stop-slop) */
+body.layout-formal .hero-title,
+body.layout-formal .curtain-title {
+    font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    line-height: 1.1;
+}
+
+body.layout-formal .section-title,
+body.layout-formal h1,
+body.layout-formal h2 {
+    font-family: var(--font-body);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    line-height: 1.1;
+    color: var(--gh-fg);
+}
+
+body.layout-formal h3,
+body.layout-formal h4,
+body.layout-formal .plan-name,
+body.layout-formal .hb-name {
+    font-family: var(--font-body);
+    font-weight: 700;
+    letter-spacing: -0.005em;
+    text-wrap: balance;
+    color: var(--gh-fg);
+    text-shadow: none;
+}
+
+body.layout-formal p { text-wrap: pretty; }
+
+/* Hero + curtain gradient text — GitHub palette, animations alive */
+body.layout-formal .hero-nexus,
+body.layout-formal .curtain-title-nexus {
+    background: linear-gradient(135deg, #2f81f7, #79c0ff) !important;
+    background: -webkit-linear-gradient(135deg, #2f81f7, #79c0ff) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    color: transparent;
+    text-shadow: none;
+    /* keep the cyanPulse animation inherited from .hero-nexus / .curtain-title-nexus */
+}
+
+body.layout-formal .hero-flow,
+body.layout-formal .curtain-title-flow {
+    background: linear-gradient(135deg, #10b981, #34d399) !important;
+    background: -webkit-linear-gradient(135deg, #10b981, #34d399) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    color: transparent;
+    text-shadow: none;
+    /* keep the purplePulse animation */
+}
+
+/* Drop-shadow glow — override cyberpunk accent-r/g/b so the pulse glows blue/purple */
+body.layout-formal .hero-nexus,
+body.layout-formal .curtain-title-nexus {
+    --accent-r: 47;  --accent-g: 129; --accent-b: 247;
+}
+body.layout-formal .hero-flow,
+body.layout-formal .curtain-title-flow {
+    --accent2-r: 16; --accent2-g: 185; --accent2-b: 129;
+}
+
+/* Links — GitHub-flavored (stop-slop: real underlines, offset) */
+body.layout-formal a {
+    color: var(--gh-accent);
+    text-decoration-color: rgba(47, 129, 247, 0.4);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+}
+body.layout-formal a:hover {
+    color: #58a6ff;
+    text-decoration-color: #58a6ff;
+}
+
+/* Focus — single consistent ring on all interactive elements */
+body.layout-formal :focus-visible {
+    outline: 2px solid var(--gh-accent);
+    outline-offset: 2px;
+    border-radius: 3px;
+}
+
+/* Nav — flat GitHub bar */
+body.layout-formal nav {
+    background: rgba(13, 17, 23, 0.86);
+    border-bottom: 1px solid var(--gh-border);
+}
+body.layout-formal .logo {
+    color: var(--gh-fg);
+    text-shadow: none;
+    font-family: var(--font-body);
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    font-size: 1.1rem;
+}
+body.layout-formal .logo:hover { text-shadow: none; color: var(--gh-fg); }
+body.layout-formal .logo::before { color: #1f6feb; text-shadow: none; }
+body.layout-formal .logo::after  { color: #d29922; text-shadow: none; }
+body.layout-formal .nav-links a {
+    color: var(--gh-fg-muted);
+    text-decoration: none;
+    text-shadow: none;
+    letter-spacing: 0.3px;
+    text-transform: none;
+    font-weight: 500;
+}
+body.layout-formal .nav-links a:hover {
+    color: var(--gh-fg);
+    text-shadow: none;
+    text-decoration: none;
+}
+body.layout-formal .nav-links a::before { display: none; }
+
+/* Signature move — H2 lintel marker (left-side 2px accent bar, no bottom underline) */
+body.layout-formal .section-title::after { display: none; }
+body.layout-formal .section-title {
+    display: inline-block;
+    padding-left: var(--sp-4, 16px);
+    border-left: 2px solid var(--gh-accent);
+    font-size: 2rem;
+    margin-bottom: var(--sp-5, 24px);
+}
+
+/* Radii — three intentional tiers (stop-slop: distinct roles, not uniform) */
+body.layout-formal input,
+body.layout-formal textarea,
+body.layout-formal .blog-sub-input,
+body.layout-formal .pub-badge,
+body.layout-formal .hb-stack-badge,
+body.layout-formal .hb-tag,
+body.layout-formal .profile-tag {
+    border-radius: var(--radius-input, 4px);
+}
+body.layout-formal .pricing-card,
+body.layout-formal .hb-card,
+body.layout-formal .pub-card,
+body.layout-formal .feature-content,
+body.layout-formal .cyber-button,
+body.layout-formal .blog-sub-btn,
+body.layout-formal .sa-trigger,
+body.layout-formal .curtain-style-btn,
+body.layout-formal .btn-secondary,
+body.layout-formal button:not(.irc-win-btn):not(.curtain-enter) {
+    border-radius: var(--radius-card, 6px);
+}
+body.layout-formal .blog-portal,
+body.layout-formal .curtain-inner,
+body.layout-formal .site-curtain,
+body.layout-formal .term-panel,
+body.layout-formal .modal,
+body.layout-formal .sa-modal {
+    border-radius: var(--radius-panel, 10px);
+}
+body.layout-formal .card-status-dot,
+body.layout-formal .staff-dot,
+body.layout-formal .card-legend-dot,
+body.layout-formal .bb-dot {
+    border-radius: 999px;
+}
+
+/* Buttons — GitHub secondary style by default */
+body.layout-formal .cyber-button,
+body.layout-formal .blog-sub-btn,
+body.layout-formal .sa-trigger,
+body.layout-formal .curtain-style-btn {
+    background: var(--gh-canvas-subtle);
+    color: var(--gh-fg);
+    border: 1px solid var(--gh-border);
+    text-shadow: none;
+    box-shadow: none;
+    animation: none;
+    text-transform: none;
+    letter-spacing: 0.3px;
+    font-weight: 500;
+    padding: 10px 16px;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+body.layout-formal .cyber-button:hover,
+body.layout-formal .blog-sub-btn:hover,
+body.layout-formal .sa-trigger:hover,
+body.layout-formal .curtain-style-btn:hover {
+    background: var(--gh-canvas-overlay);
+    border-color: var(--gh-fg-subtle);
+    box-shadow: none;
+    color: var(--gh-fg);
+    transform: none;
+}
+
+/* Primary CTA — single accent button (keeps accent surface in 4–12% range) */
+body.layout-formal .curtain-enter,
+body.layout-formal .curtain-style-btn.active {
+    background: var(--gh-accent-emphasis);
+    border: 1px solid var(--gh-accent-emphasis);
+    color: #ffffff;
+    text-shadow: none;
+    animation: none;
+    box-shadow: 0 0 0 0 rgba(47, 129, 247, 0);
+}
+body.layout-formal .curtain-enter:hover,
+body.layout-formal .curtain-style-btn.active:hover {
+    background: #388bfd;
+    border-color: #388bfd;
+    color: #ffffff;
+    transform: none;
+}
+
+/* Inputs */
+body.layout-formal input,
+body.layout-formal textarea,
+body.layout-formal .blog-sub-input {
+    background: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.05);
+    border: 1px solid var(--gh-border);
+    color: var(--gh-fg);
+    clip-path: none;
+    text-shadow: none;
+}
+body.layout-formal input::placeholder,
+body.layout-formal textarea::placeholder,
+body.layout-formal .blog-sub-input::placeholder {
+    color: var(--gh-fg-subtle);
+    opacity: 1;
+}
+body.layout-formal input:focus,
+body.layout-formal textarea:focus,
+body.layout-formal .blog-sub-input:focus {
+    border-color: var(--gh-accent);
+    box-shadow: 0 0 0 3px rgba(47, 129, 247, 0.3);
+    outline: none;
+}
+
+/* Cards — layered shadow instead of plain rgba(0,0,0,.1) (stop-slop) */
+body.layout-formal .pricing-card,
+body.layout-formal .hb-card,
+body.layout-formal .pub-card,
+body.layout-formal .feature-content,
+body.layout-formal .term-panel {
+    background: var(--gh-canvas-subtle);
+    border: 1px solid var(--gh-border);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.03) inset,
+        0 1px 2px rgba(1, 4, 9, 0.4);
+}
+
+body.layout-formal .pricing-card:hover,
+body.layout-formal .hb-card:hover {
+    border-color: var(--gh-fg-subtle);
+    transform: translateY(-2px);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.05) inset,
+        0 2px 4px rgba(1, 4, 9, 0.5),
+        0 12px 28px rgba(1, 4, 9, 0.35);
+}
+
+/* Badges — GitHub-flavored */
+body.layout-formal .pub-badge,
+body.layout-formal .hb-stack-badge,
+body.layout-formal .hb-tag,
+body.layout-formal .profile-tag {
+    background: var(--gh-canvas-overlay);
+    border: 1px solid var(--gh-border);
+    color: var(--gh-fg-muted);
+    text-shadow: none;
+    font-family: var(--font-body);
+    letter-spacing: 0.2px;
+    text-transform: none;
+    font-weight: 500;
+    padding: 2px 8px;
+    font-size: 0.72rem;
+}
+body.layout-formal .pub-badge.journal,
+body.layout-formal .pub-badge.conference,
+body.layout-formal .pub-badge.preprint {
+    background: rgba(47, 129, 247, 0.14);
+    color: #79b8ff;
+    border-color: rgba(47, 129, 247, 0.4);
+}
+
+/* Status dots — GitHub semantic colors */
+body.layout-formal .card-status-dot.active,
+body.layout-formal .card-legend-dot.green,
+body.layout-formal .staff-dot.green {
+    background: var(--gh-success);
+    box-shadow: 0 0 0 2px rgba(63, 185, 80, 0.2);
+    animation: none;
+}
+body.layout-formal .card-status-dot.idle,
+body.layout-formal .card-legend-dot.amber {
+    background: var(--gh-attention);
+    box-shadow: 0 0 0 2px rgba(210, 153, 34, 0.2);
+    animation: none;
+}
+
+/* Backend banner → GitHub attention yellow */
+body.layout-formal #backend-banner {
+    background: rgba(210, 153, 34, 0.08);
+    border-bottom: 1px solid rgba(210, 153, 34, 0.4);
+    box-shadow: none;
+    color: var(--gh-fg);
+}
+body.layout-formal #backend-banner .bb-label { color: var(--gh-attention); }
+body.layout-formal #backend-banner .bb-dot { background: var(--gh-attention); box-shadow: none; animation: none; }
+
+/* Footer */
+body.layout-formal .footer {
+    background: var(--gh-canvas);
+    border-top: 1px solid var(--gh-border);
+}
+body.layout-formal .footer p { color: var(--gh-fg-muted); }
+
+/* Blog portal */
+body.layout-formal .blog-portal {
+    background: var(--gh-canvas-subtle);
+    border: 1px solid var(--gh-border);
+    clip-path: none !important;
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.04) inset,
+        0 8px 24px rgba(1, 4, 9, 0.5);
+}
+body.layout-formal .blog-portal::before { display: none; }
+body.layout-formal .blog-portal-header {
+    background: var(--gh-canvas-overlay);
+    border-bottom: 1px solid var(--gh-border);
+}
+body.layout-formal .blog-portal-title {
+    color: var(--gh-fg);
+    text-shadow: none;
+    letter-spacing: 0.3px;
+}
+
+/* Blog open link — primary accent CTA */
+body.layout-formal .blog-open-link {
+    background: var(--gh-accent-emphasis);
+    border: 1px solid var(--gh-accent-emphasis);
+    color: #ffffff;
+    clip-path: none !important;
+    border-radius: var(--radius-card);
+}
+body.layout-formal .blog-open-link:hover {
+    background: #388bfd;
+    border-color: #388bfd;
+    box-shadow: none;
+    transform: none;
+    color: #ffffff;
+}
+
+body.layout-formal .blog-portal-role--author {
+    border: 1px solid var(--gh-border-muted);
+    background: var(--gh-canvas-inset);
+    border-radius: var(--radius-card);
+}
+
+/* Curtain in forum mode */
+body.layout-formal .site-curtain {
+    background: var(--gh-canvas);
+}
+body.layout-formal .curtain-inner {
+    background: var(--gh-canvas-subtle);
+    border: 1px solid var(--gh-border);
+    clip-path: none !important;
+    box-shadow: 0 24px 48px rgba(1, 4, 9, 0.6);
+}
+
+/* Terminal panel chrome tones down in forum */
+body.layout-formal .term-panel-header {
+    background: var(--gh-canvas-overlay);
+    border-bottom: 1px solid var(--gh-border);
+}
+
+/* Reinforce the two-font policy — don't let monospace creep onto UI prose */
+body.layout-formal .plan-period,
+body.layout-formal .hero-subtitle,
+body.layout-formal .pub-meta,
+body.layout-formal .hb-desc,
+body.layout-formal .pub-title,
+body.layout-formal .research-focus,
+body.layout-formal p,
+body.layout-formal li,
+body.layout-formal button:not(.irc-win-btn),
+body.layout-formal input,
+body.layout-formal textarea {
+    font-family: var(--font-body);
+}
+
+/* Open Roster button — Formal: wrapped-edge terminal readout */
+body.layout-formal .roster-open-btn {
+    clip-path: none !important;
+    border-radius: 6px;
+    border: 1px solid var(--gh-border);
+    outline: 1px solid rgba(255, 255, 255, 0.08);
+    outline-offset: 3px;
+    color: var(--gh-fg);
+    font-family: var(--font-term, 'VT323', 'Courier New', monospace);
+    font-size: 0.85rem;
+    letter-spacing: 2px;
+    padding: 12px 32px;
+    background: var(--gh-canvas-inset);
+}
+body.layout-formal .roster-open-btn:not(.roster-active):hover {
+    border-color: var(--gh-accent);
+    outline-color: rgba(47, 129, 247, 0.4);
+    color: var(--gh-accent);
+    box-shadow: none;
+}
+body.layout-formal .roster-open-btn.roster-active {
+    border-color: var(--gh-border);
+    outline-color: rgba(255, 255, 255, 0.04);
+    color: var(--gh-fg-muted);
+}
+
+/* Layout toggle button — icon-only, no label */
+.layout-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    margin-left: 10px;
+    background: transparent;
+    border: 1px solid rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.3);
+    color: var(--primary-cyan);
+    font-size: 1.1rem;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: color 0.25s, border-color 0.25s, transform 0.4s, background 0.25s;
+}
+.layout-toggle i { line-height: 1; }
+.layout-toggle:hover,
+.layout-toggle:focus-visible {
+    color: #ffffff;
+    border-color: var(--primary-cyan);
+    background: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.08);
+    transform: rotate(180deg);
+    outline: none;
+}
+body.layout-formal .layout-toggle {
+    border: 1px solid var(--gh-border);
+    color: var(--gh-fg);
+    border-radius: 6px;
+}
+body.layout-formal .layout-toggle:hover,
+body.layout-formal .layout-toggle:focus-visible {
+    color: var(--gh-accent);
+    border-color: var(--gh-accent);
+    background: var(--gh-canvas-inset);
+}
+
+/* Right-click Ransei-style context menu */
+.rc-menu {
+    position: fixed;
+    display: none;
+    z-index: 100000;
+    margin: 0;
+    padding: 4px;
+    list-style: none;
+    min-width: 150px;
+    font-family: 'VT323', 'Courier New', monospace;
+    font-size: 1.05rem;
+    letter-spacing: 1px;
+    color: var(--text-primary);
+    background: var(--darker-bg);
+    border: 1px solid var(--primary-cyan);
+    outline: 2px solid var(--darker-bg);
+    outline-offset: 2px;
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.6), 0 0 12px rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.25);
+}
+.rc-menu-item {
+    padding: 4px 12px;
+    cursor: pointer;
+    user-select: none;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+}
+.rc-menu-item:hover,
+.rc-menu-item:focus {
+    background: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.12);
+    border-color: rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.4);
+    color: var(--primary-cyan);
+    outline: none;
+}
+body.layout-formal .rc-menu {
+    background: var(--gh-canvas);
+    border: 1px solid var(--gh-border);
+    outline-color: var(--gh-canvas);
+    font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+    font-size: 0.85rem;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--gh-fg);
+}
+body.layout-formal .rc-menu-item {
+    text-transform: none;
+}
+body.layout-formal .rc-menu-item:hover,
+body.layout-formal .rc-menu-item:focus {
+    background: var(--gh-canvas-inset);
+    border-color: var(--gh-border);
+    color: var(--gh-accent);
+}
+
 

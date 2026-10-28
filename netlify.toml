@@ -9,6 +9,26 @@
 [context.production.environment]
   NODE_VERSION = "18"
 
+# Legacy per-member URLs → unified dynamic profile.
+# These must come BEFORE the catch-all 404 blocks.
+[[redirects]]
+  from   = "/karageorgiev.html"
+  to     = "/member.html?slug=karageorgiev"
+  status = 301
+  force  = true
+
+[[redirects]]
+  from   = "/petrova.html"
+  to     = "/member.html?slug=petrova"
+  status = 301
+  force  = true
+
+[[redirects]]
+  from   = "/medev.html"
+  to     = "/member.html?slug=medev"
+  status = 301
+  force  = true
+
 # Block direct HTTP access to backend source files served as static assets.
 # The backend runs on the self-hosted machine, not on Netlify.
 [[redirects]]

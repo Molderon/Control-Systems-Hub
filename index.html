@@ -9,16 +9,53 @@
     <link href="css/features.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Space+Grotesk:wght@500;600;700&family=VT323&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.34.0/dist/tabler-icons.min.css"
           integrity="sha384-8zE3cHqgn3iJlsilASXr1IcXFP7TnplbXZSbvKuaUYjPUpcK7QhlyLE/cY7lIBTp" crossorigin="anonymous">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
           integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" />
 </head>
 <body id="top">
+    <script>
+    (function(){try{var l=localStorage.getItem('cs-layout');if(l==='formal'||l==='indieweb')document.body.classList.add('layout-'+l);}catch(e){}})();
+    </script>
+
+    <div id="site-curtain" class="site-curtain" role="dialog" aria-modal="true" aria-label="Choose site style">
+        <div class="curtain-inner">
+            <div class="curtain-prompt">▶_ booting</div>
+            <h1 class="curtain-title"><span class="curtain-title-nexus">Control</span> <span class="curtain-title-flow">Systems</span></h1>
+            <ul class="curtain-boot" aria-label="Site principles">
+                <li class="curtain-boot-line"><span class="cb-tag">[ok]</span> drm subsystem absent</li>
+                <li class="curtain-boot-line"><span class="cb-tag">[ok]</span> no cookies to persist</li>
+                <li class="curtain-boot-line"><span class="cb-tag">[ok]</span> source: public mirror</li>
+            </ul>
+            <p class="curtain-subtitle">digital campfire</p>
+            <div class="curtain-divider">── choose your outlook ──</div>
+            <div class="curtain-style-toggle" role="group" aria-label="UI style">
+                <button type="button" class="curtain-style-btn" data-layout="formal">
+                    <span class="csb-label">Formal</span>
+                    <span class="csb-desc">clean · typographic · academic</span>
+                </button>
+                <button type="button" class="curtain-style-btn active" data-layout="indieweb">
+                    <span class="csb-label">IndieWeb</span>
+                    <span class="csb-desc">neon · terminal · motion</span>
+                </button>
+            </div>
+            <button type="button" id="curtain-enter" class="curtain-enter">[ ENTER ]</button>
+            <p class="curtain-footnote">tu-sofia · plovdiv</p>
+        </div>
+    </div>
+
     <div class="cyber-bg" aria-hidden="true">
         <div class="cyber-gradient"></div>
         <div class="matrix-rain" id="matrixRain"></div>
+    </div>
+    <div class="mesh-bg" aria-hidden="true">
+        <div class="mesh-blob mesh-blob-1"></div>
+        <div class="mesh-blob mesh-blob-2"></div>
+        <div class="mesh-blob mesh-blob-3"></div>
+        <div class="mesh-blob mesh-blob-4"></div>
+        <div class="mesh-grain"></div>
     </div>
     <div class="particles" id="particlesContainer" aria-hidden="true"></div>
     <div class="data-streams" id="dataStreams" aria-hidden="true"></div>
@@ -44,11 +81,7 @@
                         <span class="btn-glitch"></span>
                     </a>
                 </div>
-                <button class="lang-toggle" id="langToggle" aria-label="Switch language">
-                    <span class="lang-opt lang-active" id="langEN">EN</span>
-                    <span class="lang-sep">//</span>
-                    <span class="lang-opt" id="langBG">BG</span>
-                </button>
+                <button type="button" id="layoutToggleBtn" class="layout-toggle" aria-label=""><i class="ti ti-contrast" aria-hidden="true"></i></button>
             </div>
             <button class="mobile-menu-button" id="mobileMenuBtn">
                 <div class="hamburger"><span></span><span></span><span></span></div>
@@ -202,21 +235,30 @@
                             <h3>Publications</h3>
                             <p>Peer-reviewed contributions from the doctoral group. Full articles available on the blog.</p>
                             <div class="pub-list">
-                                <div class="pub-card">
+                                <div class="pub-card"
+                                     data-pub-date="2024"
+                                     data-pub-field="Control Theory · ML"
+                                     data-pub-abstract="A reinforcement-learning adaptive layer tunes classical PID gains online for HVAC plants where nonlinearities and seasonal drift degrade static tuning. Simulated and benchtop results show reduced overshoot and faster settling versus Ziegler-Nichols baselines.">
                                     <span class="pub-badge journal">Journal</span>
                                     <div>
                                         <a href="#" target="_blank" rel="noopener" class="pub-title">Adaptive PID Control via Reinforcement Learning for Nonlinear HVAC Systems</a>
                                         <div class="pub-meta">R. Petrova &mdash; 2024 &mdash; <span class="pub-doi">DOI: 10.xxxx/placeholder</span></div>
                                     </div>
                                 </div>
-                                <div class="pub-card">
+                                <div class="pub-card"
+                                     data-pub-date="2023"
+                                     data-pub-field="Sub-Symbolic AI · Embedded"
+                                     data-pub-abstract="A compact MLP surrogate identifies nonlinear plant dynamics directly from input-output data, replacing closed-form models on 32-bit MCUs. Deployment-aware pruning keeps inference under 2ms while preserving prediction accuracy within 1.5% of a desktop reference.">
                                     <span class="pub-badge conference">Conference</span>
                                     <div>
                                         <a href="#" target="_blank" rel="noopener" class="pub-title">Neural Network Approximation for Nonlinear System Identification in Embedded Environments</a>
                                         <div class="pub-meta">I. Karageorgiev &mdash; 2023 &mdash; <span class="pub-doi">arXiv: 2303.xxxxx</span></div>
                                     </div>
                                 </div>
-                                <div class="pub-card">
+                                <div class="pub-card"
+                                     data-pub-date="2025"
+                                     data-pub-field="Robotics · Sub-Symbolic AI"
+                                     data-pub-abstract="An RL policy warm-starts the MPC optimiser on resource-constrained SBCs, trading solver iterations for learned heuristics. The hybrid loop achieves comparable path tracking at a fraction of the compute budget on standard navigation benchmarks.">
                                     <span class="pub-badge preprint">Preprint</span>
                                     <div>
                                         <a href="#" target="_blank" rel="noopener" class="pub-title">RL-Augmented Model Predictive Control for Autonomous Navigation on Constrained Hardware</a>
@@ -424,112 +466,10 @@
     <section class="pricing fade-up" id="pricing">
         <div class="pricing-container">
             <div class="section-header"><h2 class="section-title">Ph.D Students</h2></div>
-            <p class="roster-placeholder-note" style="text-align:center;">// roster details shown are placeholder — do not reflect confirmed schedules or contact information</p>
             <div class="roster-open-wrap">
                 <button class="roster-open-btn" id="rosterOpenBtn">[ OPEN ROSTER ]</button>
             </div>
-            <div class="pricing-grid">
-                <div class="pricing-card" data-profile="petrova">
-                    <div class="plan-name">Ralitsa Petrova</div>
-                    <div class="plan-period">Engineer, Ph.D &mdash; Researcher</div>
-                    <ul class="plan-features">
-                        <li><span class="pf-lbl">Working Days</span><span class="pf-val">Monday &ndash; Friday</span></li>
-                        <li>Working Hours: 10:00 &ndash; 14:00</li>
-                        <li><span class="pf-lbl">Email</span><span class="pf-val">r.petrova@tu-plovdiv.bg</span></li>
-                    </ul>
-                    <div class="card-proc-footer">
-                        <div class="card-proc-bar">
-                            <span class="card-status-dot active"></span>
-                            <span class="card-proc-name">kthread/ctrl:petrova_r@0x4319</span>
-                        </div>
-                        <div class="card-proc-legend">
-                            <div class="card-legend-row">
-                                <span class="card-legend-dot green"></span>
-                                <span class="card-legend-text">available &mdash; office hours active</span>
-                            </div>
-                            <div class="card-legend-row">
-                                <span class="card-legend-dot amber"></span>
-                                <span class="card-legend-text">on vacation &mdash; async only</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="pricing-card" data-profile="karageorgiev">
-                    <div class="plan-name">Ivelin Karageorgiev</div>
-                    <div class="plan-period">Engineer, Ph.D &mdash; Researcher</div>
-                    <ul class="plan-features">
-                        <li><span class="pf-lbl">Working Days</span><span class="pf-val">Monday &ndash; Friday</span></li>
-                        <li>Working Hours: 10:00 &ndash; 14:00</li>
-                        <li><span class="pf-lbl">Email</span><span class="pf-val">i.karageorgiev@tu-plovdiv.bg</span></li>
-                    </ul>
-                    <div class="card-proc-footer">
-                        <div class="card-proc-bar">
-                            <span class="card-status-dot idle"></span>
-                            <span class="card-proc-name">kthread/ctrl:karageorgiev_i@0x4319</span>
-                        </div>
-                        <div class="card-proc-legend">
-                            <div class="card-legend-row">
-                                <span class="card-legend-dot green"></span>
-                                <span class="card-legend-text">available &mdash; office hours active</span>
-                            </div>
-                            <div class="card-legend-row">
-                                <span class="card-legend-dot amber"></span>
-                                <span class="card-legend-text">on vacation &mdash; async only</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="pricing-card" data-profile="medev">
-                    <div class="plan-name">Mehmed Medev</div>
-                    <div class="plan-period">Engineer, Ph.D &mdash; Assistant</div>
-                    <ul class="plan-features">
-                        <li><span class="pf-lbl">Working Days</span><span class="pf-val">Monday &ndash; Friday</span></li>
-                        <li>Working Hours: By appointment</li>
-                        <li><span class="pf-lbl">Email</span><span class="pf-val">m.medev@tu-plovdiv.bg</span></li>
-                    </ul>
-                    <div class="card-proc-footer">
-                        <div class="card-proc-bar">
-                            <span class="card-status-dot idle"></span>
-                            <span class="card-proc-name">kthread/async:medev_m@0x4319</span>
-                        </div>
-                        <div class="card-proc-legend">
-                            <div class="card-legend-row">
-                                <span class="card-legend-dot green"></span>
-                                <span class="card-legend-text">available &mdash; office hours active</span>
-                            </div>
-                            <div class="card-legend-row">
-                                <span class="card-legend-dot amber"></span>
-                                <span class="card-legend-text">on vacation &mdash; async only</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="pricing-card" data-profile="sinapova">
-                    <div class="plan-name">Diana Sinapova</div>
-                    <div class="plan-period">Engineer, Ph.D &mdash; Researcher</div>
-                    <ul class="plan-features">
-                        <li><span class="pf-lbl">Working Days</span><span class="pf-val">Monday &ndash; Friday</span></li>
-                        <li>Working Hours: [TBD]</li>
-                        <li><span class="pf-lbl">Email</span><span class="pf-val">[TBD]</span></li>
-                    </ul>
-                    <div class="card-proc-footer">
-                        <div class="card-proc-bar">
-                            <span class="card-status-dot active"></span>
-                            <span class="card-proc-name">kthread/ctrl:sinapova_d@0x[TBD]</span>
-                        </div>
-                        <div class="card-proc-legend">
-                            <div class="card-legend-row">
-                                <span class="card-legend-dot green"></span>
-                                <span class="card-legend-text">available &mdash; office hours active</span>
-                            </div>
-                            <div class="card-legend-row">
-                                <span class="card-legend-dot amber"></span>
-                                <span class="card-legend-text">on vacation &mdash; async only</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <div class="pricing-grid" id="pricing-grid"></div>
         </div>
     </section>
 
@@ -610,19 +550,30 @@
             <button class="blog-portal-close" id="blogPortalClose" aria-label="Close">×</button>
         </div>
         <div class="blog-portal-body">
-            <div class="blog-portal-sub">
-                <p class="blog-sub-label">// Subscribe for new publications</p>
-                <div class="blog-sub-form">
-                    <input type="email" id="blogSubEmail" class="blog-sub-input" placeholder="your@email.address" autocomplete="email">
-                    <button class="blog-sub-btn" id="blogSubBtn">SYNC</button>
-                </div>
-                <p class="blog-sub-status" id="blogSubStatus"></p>
+            <div class="blog-portal-role blog-portal-role--reader">
+                <div class="blog-portal-role-label">▸ as reader</div>
+                <a href="blog.html" class="blog-open-link">
+                    <span class="blog-open-link-text">OPEN BLOG</span>
+                    <span class="blog-open-link-arrow">──────────────────────────────►</span>
+                </a>
             </div>
-            <div class="blog-portal-divider">──────────────────────────────</div>
-            <a href="blog.html" class="blog-open-link">
-                <span class="blog-open-link-text">OPEN BLOG</span>
-                <span class="blog-open-link-arrow">──────────────────────────────►</span>
-            </a>
+
+            <div class="blog-portal-divider">── alt channels · subscribe · submit ──</div>
+
+            <div class="blog-portal-role blog-portal-role--author">
+                <div class="blog-portal-role-label">▸ as follower &nbsp;·&nbsp; author</div>
+                <div class="blog-portal-sub">
+                    <p class="blog-sub-label">// Subscribe for new publications</p>
+                    <div class="blog-sub-form">
+                        <input type="email" id="blogSubEmail" class="blog-sub-input" placeholder="your@email.address" autocomplete="email">
+                        <button class="blog-sub-btn" id="blogSubBtn">SYNC</button>
+                    </div>
+                    <p class="blog-sub-status" id="blogSubStatus"></p>
+                </div>
+                <div class="blog-portal-submit-wrap">
+                    <button type="button" class="sa-trigger" data-submit-trigger>[ SUBMIT ARTICLE ]</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -647,6 +598,14 @@
     <script src="ui-enhancements.js"></script>
     <script src="grid-fx.js"></script>
     <script src="homebrew.js"></script>
+    <script src="members.js"></script>
+    <script src="submit-article.js"></script>
+    <script src="backend-watch.js"></script>
+    <script src="curtain.js"></script>
+    <script src="curtain-boot-data.js"></script>
+    <script src="curtain-boot.js"></script>
+    <script src="layout-toggle.js"></script>
+    <script src="context-menu.js"></script>
     <script>
     (function () {
         const DATA = {
@@ -925,9 +884,21 @@
             pricingGrid.classList.add('roster-sealed');
 
             rosterBtn.addEventListener('click', function () {
-                if (this.classList.contains('roster-active')) return;
-                this.classList.add('roster-active');
-                this.textContent = '[ ROSTER ACTIVE ]';
+                var btn = this;
+                var active = btn.classList.contains('roster-active');
+
+                if (active) {
+                    btn.classList.remove('roster-active');
+                    btn.textContent = '[ OPEN ROSTER ]';
+                    pricingGrid.classList.add('roster-sealed');
+                    pricingGrid.querySelectorAll('.pricing-card').forEach(function (card) {
+                        card.classList.remove('roster-revealed');
+                    });
+                    return;
+                }
+
+                btn.classList.add('roster-active');
+                btn.textContent = '[ ROSTER ACTIVE ]';
 
                 var container = document.getElementById('pricing');
                 container.style.position = 'relative';
@@ -945,6 +916,65 @@
         }
     })();
     </script>
+    <script>
+    (function () {
+        /* ── Publication hover panel (mirrors domain hover) ─────────────── */
+        var pubCards = document.querySelectorAll('.pub-card[data-pub-abstract]');
+        if (!pubCards.length) return;
+
+        var panel = document.createElement('div');
+        panel.id = 'pubHoverPanel';
+        panel.className = 'pub-hover-panel';
+        panel.innerHTML =
+            '<div class="phover-field"></div>' +
+            '<div class="phover-abstract"></div>' +
+            '<div class="phover-date-row"><span class="phover-date-label">published</span><span class="phover-date"></span></div>';
+        document.body.appendChild(panel);
+
+        var pField    = panel.querySelector('.phover-field');
+        var pAbstract = panel.querySelector('.phover-abstract');
+        var pDate     = panel.querySelector('.phover-date');
+
+        var hideTimeout = null;
+
+        function trim50(text) {
+            var words = (text || '').trim().split(/\s+/);
+            if (words.length <= 50) return words.join(' ');
+            return words.slice(0, 50).join(' ') + '…';
+        }
+
+        function showPanel(card) {
+            clearTimeout(hideTimeout);
+            pField.textContent    = card.dataset.pubField || '';
+            pAbstract.textContent = trim50(card.dataset.pubAbstract);
+            pDate.textContent     = card.dataset.pubDate || '';
+
+            var rect = card.getBoundingClientRect();
+            var W    = 340;
+            var left = rect.right + 14;
+            if (left + W > window.innerWidth - 8) left = rect.left - W - 14;
+            if (left < 8) left = 8;
+            var H   = panel.offsetHeight || 180;
+            var top = rect.top;
+            if (top + H > window.innerHeight - 8) top = window.innerHeight - H - 8;
+            if (top < 8) top = 8;
+            panel.style.top  = top + 'px';
+            panel.style.left = left + 'px';
+            panel.classList.add('phover-visible');
+        }
+
+        function hidePanel() {
+            hideTimeout = setTimeout(function () { panel.classList.remove('phover-visible'); }, 80);
+        }
+
+        pubCards.forEach(function (card) {
+            card.addEventListener('mouseenter', function () { showPanel(card); });
+            card.addEventListener('mouseleave', hidePanel);
+        });
+        panel.addEventListener('mouseenter', function () { clearTimeout(hideTimeout); });
+        panel.addEventListener('mouseleave', hidePanel);
+    })();
+    </script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
             integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
     <script>
@@ -953,7 +983,8 @@
         var map = L.map('campus-map', {
             center: [LAT, LNG],
             zoom: 17,
-            scrollWheelZoom: false
+            scrollWheelZoom: false,
+            attributionControl: false
         });
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
             attribution: '',

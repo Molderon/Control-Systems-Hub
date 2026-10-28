@@ -10,6 +10,16 @@ function renderMarkdown(md) {
             `<pre><code class="lang-${lang}">${escHtml(code.trim())}</code></pre>`)
         // inline code
         .replace(/`([^`]+)`/g, (_, c) => `<code>${escHtml(c)}</code>`)
+        // GFM tables (header + separator + one-or-more body rows)
+        .replace(/^\|(.+)\|\n\|[-:| ]+\|\n((?:\|.+\|\n?)+)/gm, (_, header, rows) => {
+            const headCells = header.split('|').map(c => c.trim()).filter(c => c.length);
+            const bodyRows  = rows.trim().split('\n').map(row =>
+                row.replace(/^\||\|$/g, '').split('|').map(c => c.trim()));
+            const thead = `<thead><tr>${headCells.map(c => `<th>${c}</th>`).join('')}</tr></thead>`;
+            const tbody = `<tbody>${bodyRows.map(r =>
+                `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody>`;
+            return `<table class="md-table">${thead}${tbody}</table>`;
+        })
         // headings
         .replace(/^#### (.+)$/gm, '<h4>$1</h4>')
         .replace(/^### (.+)$/gm, '<h3>$1</h3>')
@@ -42,7 +52,7 @@ function renderMarkdown(md) {
         .map(chunk => {
             chunk = chunk.trim();
             if (!chunk) return '';
-            if (/^<(h[1-6]|ul|ol|pre|blockquote|hr|img)/.test(chunk)) return chunk;
+            if (/^<(h[1-6]|ul|ol|pre|blockquote|hr|img|table)/.test(chunk)) return chunk;
             return `<p>${chunk.replace(/\n/g, '<br>')}</p>`;
         })
         .join('\n');
